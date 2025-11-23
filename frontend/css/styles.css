@@ -1,0 +1,900 @@
+/* ============================================
+   VARIABLES Y CONFIGURACIÓN GENERAL
+   ============================================ */
+:root {
+    --primary-color: #0d6efd;
+    --primary-dark: #0a58ca;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --light-color: #f8f9fa;
+    --dark-color: #212529;
+    
+    --admin-color: #dc3545;
+    --docente-color: #0dcaf0;
+    --padre-color: #ffc107;
+    
+    --sidebar-width: 260px;
+    --navbar-height: 60px;
+    --transition-speed: 0.3s;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f6fa;
+    color: var(--dark-color);
+}
+
+/* ============================================
+   LIBRETA MULTICURSO - ESTILOS ESPECÍFICOS
+   ============================================ */
+.libreta-multicurso .modal-dialog {
+    max-width: 95vw;
+}
+
+#gridMulticurso tbody tr:hover {
+    background-color: transparent !important;
+}
+
+#gridMulticurso .table input.form-control:focus {
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+    outline: none;
+}
+
+#gridMulticurso .table-responsive {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+/* Prevenir cualquier transformación o movimiento */
+#gridMulticurso * {
+    transform: none !important;
+    transition: none !important;
+}
+
+/* Solo permitir efectos suaves en focus sin movimiento */
+#gridMulticurso input:focus {
+    transition: box-shadow 0.2s ease !important;
+}
+
+/* ============================================
+   PÁGINA DE LOGIN
+   ============================================ */
+.logo-circle {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+}
+
+.card {
+    border-radius: 15px;
+    transition: transform var(--transition-speed);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* ============================================
+   DASHBOARD LAYOUT
+   ============================================ */
+.wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+#content {
+    width: 100%;
+    min-height: 100vh;
+    margin-left: var(--sidebar-width);
+    transition: all var(--transition-speed);
+}
+
+.wrapper.sidebar-collapsed #content {
+    margin-left: 70px;
+}
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: var(--sidebar-width);
+    background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+    color: white;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    transition: all var(--transition-speed);
+    z-index: 1000;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar.collapsed {
+    width: 70px;
+}
+
+.sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.sidebar-header .logo-circle {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-size: 2rem;
+}
+
+.sidebar-header h4 {
+    color: white;
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+.sidebar-header p {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0;
+}
+
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.sidebar-logo i {
+    font-size: 1.8rem;
+}
+
+.sidebar.collapsed .sidebar-logo-text {
+    display: none;
+}
+
+.sidebar-menu,
+.sidebar .components {
+    list-style: none;
+    padding: 1rem 0;
+}
+
+.sidebar-menu li,
+.sidebar .components li {
+    margin: 0.5rem 0;
+}
+
+.sidebar-menu a,
+.sidebar .components a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s;
+}
+
+.sidebar-menu a:hover,
+.sidebar .components a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.sidebar-menu a.active,
+.sidebar .components a.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-left: 4px solid var(--warning-color);
+}
+
+.sidebar-menu i,
+.sidebar .components i {
+    font-size: 1.3rem;
+    min-width: 30px;
+}
+
+.sidebar.collapsed .menu-text {
+    display: none;
+}
+
+.sidebar-footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    transition: margin-left var(--transition-speed);
+}
+
+.main-content.expanded {
+    margin-left: 70px;
+}
+
+/* Navbar */
+.navbar-custom {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.notification-badge {
+    position: relative;
+}
+
+.notification-badge .badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 0.65rem;
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    transition: background 0.2s;
+}
+
+.user-menu:hover {
+    background: var(--light-color);
+}
+
+.user-avatar,
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.user-info {
+    text-align: right;
+}
+
+.user-info .fw-bold {
+    display: block;
+    font-size: 0.9rem;
+}
+
+.user-info small {
+    font-size: 0.75rem;
+}
+
+/* Dropdown customization */
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+}
+
+.dropdown-item {
+    padding: 0.6rem 1.25rem;
+    transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+    background: var(--light-color);
+    padding-left: 1.5rem;
+}
+
+.dropdown-divider {
+    margin: 0.5rem 0;
+}
+
+/* Evitar backdrop del dropdown */
+.dropdown-backdrop,
+.modal-backdrop.show,
+.modal-backdrop.fade,
+.modal-backdrop {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Forzar que no aparezcan backdrops */
+body > .dropdown-backdrop,
+body > .modal-backdrop,
+body > [class*="backdrop"] {
+    display: none !important;
+}
+
+/* Content Area */
+.content-area {
+    padding: 2rem;
+}
+
+/* ============================================
+   CARDS Y COMPONENTES
+   ============================================ */
+.stat-card {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all var(--transition-speed);
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card .card-body {
+    padding: 1.5rem;
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+}
+
+.stat-icon.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.stat-icon.success {
+    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    color: var(--dark-color);
+}
+
+.stat-icon.warning {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    color: var(--dark-color);
+}
+
+.stat-icon.danger {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+    color: var(--dark-color);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--dark-color);
+}
+
+.stat-label {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+/* ============================================
+   ÁREA DE CONTENIDO CRUD
+   ============================================ */
+.content-wrapper {
+    padding: 2rem;
+}
+
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--dark-color);
+    margin-bottom: 0.5rem;
+}
+
+.page-breadcrumb {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+/* Estilos adicionales para cards */
+.card-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    border-radius: 15px 15px 0 0 !important;
+    border: none;
+    padding: 1.25rem 1.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.card-footer {
+    background: var(--light-color);
+    border-top: 1px solid #dee2e6;
+    border-radius: 0 0 15px 15px;
+    padding: 1rem 1.5rem;
+}
+
+/* ============================================
+   TABLAS
+   ============================================ */
+.table-custom {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.table-custom thead {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+}
+
+.table-custom thead th {
+    border: none;
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.table-custom tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.table-custom tbody tr {
+    transition: background 0.2s;
+}
+
+.table-custom tbody tr:hover {
+    background: var(--light-color);
+}
+
+/* ============================================
+   BADGES Y ETIQUETAS
+   ============================================ */
+.badge-role {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-role.admin {
+    background: var(--admin-color);
+    color: white;
+}
+
+.badge-role.docente {
+    background: var(--docente-color);
+    color: var(--dark-color);
+}
+
+.badge-role.padre {
+    background: var(--padre-color);
+    color: var(--dark-color);
+}
+
+.badge-status {
+    padding: 0.35rem 0.7rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-status.activo {
+    background: #d1f4e0;
+    color: var(--success-color);
+}
+
+.badge-status.inactivo {
+    background: #f8d7da;
+    color: var(--danger-color);
+}
+
+/* ============================================
+   FORMULARIOS
+   ============================================ */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 0.5rem;
+}
+
+.input-group-text {
+    background: var(--light-color);
+    border-right: none;
+}
+
+.input-group .form-control {
+    border-left: none;
+}
+
+/* ============================================
+   BOTONES
+   ============================================ */
+.btn {
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-icon {
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ============================================
+   MODALES
+   ============================================ */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    border-radius: 15px 15px 0 0;
+    border-bottom: none;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+/* Optimizar backdrop del modal */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+/* ============================================
+   ALERTAS
+   ============================================ */
+.alert {
+    border-radius: 10px;
+    border: none;
+    padding: 1rem 1.5rem;
+}
+
+.alert-dismissible .btn-close {
+    padding: 1rem 1.5rem;
+}
+
+/* ============================================
+   LOADING Y SPINNERS
+   ============================================ */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.spinner-custom {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   SCROLLBAR PERSONALIZADO
+   ============================================ */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--light-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+/* Ocultar botón de menú en pantallas grandes */
+@media (min-width: 769px) {
+    #sidebarCollapse {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        margin-left: calc(-1 * var(--sidebar-width));
+    }
+    
+    .sidebar.active {
+        margin-left: 0;
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .content-area {
+        padding: 1rem;
+    }
+    
+    .navbar-custom {
+        padding: 1rem;
+    }
+    
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* ============================================
+   UTILIDADES
+   ============================================ */
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.shadow-soft {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.shadow-medium {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+}
+
+.shadow-strong {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.rounded-custom {
+    border-radius: 15px !important;
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   UTILIDADES ADICIONALES
+   ============================================ */
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+/* ============================================
+   NOTAS MULTICURSO - ESTILOS LIMPIOS
+   ============================================ */
+
+/* Vista toggle buttons */
+.btn-group .btn.active {
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+    color: white !important;
+    box-shadow: inset 0 1px 3px rgba(25, 135, 84, 0.3) !important;
+}
+
+.btn-group .btn:hover {
+    background-color: rgba(25, 135, 84, 0.2) !important;
+    border-color: rgba(25, 135, 84, 0.4) !important;
+    color: #198754 !important;
+}
+
+.btn-group .btn:not(.active) {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+}
+
+/* Input enhancements for multicourse */
+#gridMulticurso input[type="number"] {
+    background: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#gridMulticurso input[type="number"]:focus {
+    background: #f8f9fa !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+    transform: scale(1.02);
+}
+
+#gridMulticurso input[type="number"]:invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+/* Promedio cells styling */
+td[data-curso-id] {
+    font-weight: bold;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    border: 1px solid #dee2e6;
+    background: #f8f9fa !important;
+}
+
+td[data-curso-id]:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
+    border-color: rgba(13, 110, 253, 0.3);
+}
+
+/* View mode responsive adjustments */
+@media (max-width: 768px) {
+    .btn-group .btn {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.5rem;
+    }
+    
+    #gridMulticurso th {
+        font-size: 0.8rem;
+        padding: 0.3rem;
+    }
+    
+    #gridMulticurso td {
+        padding: 0.2rem;
+    }
+}
+
+/* Emoji animations */
+@keyframes emojiPulse {
+    0%, 100% { 
+        transform: scale(1); 
+        filter: brightness(1);
+    }
+    50% { 
+        transform: scale(1.1); 
+        filter: brightness(1.05);
+    }
+}
+
+.promedio-general span:last-child,
+td[data-curso-id] span:last-child {
+    animation: emojiPulse 3s infinite;
+    display: inline-block;
+}
+
+/* Course header enhancements */
+#gridMulticurso thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-clip: padding-box;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth transitions for view changes */
+#gridMulticurso {
+    transition: all 0.3s ease-in-out;
+}
+
+#gridMulticurso tbody tr {
+    transition: all 0.2s ease;
+}
+
+/* Clean table styling */
+#gridMulticurso {
+    background: white;
+}
+
+#gridMulticurso td {
+    background: white !important;
+    border: 1px solid #dee2e6 !important;
+}

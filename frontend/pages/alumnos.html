@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alumnos - Sistema de Gestión Académica</title>
+
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-circle">
+                    <i class="bi bi-mortarboard-fill text-white"></i>
+                </div>
+                <h4 class="mt-3">SGA</h4>
+                <p class="text-muted small">Sistema de Gestión</p>
+            </div>
+
+            <ul class="list-unstyled components" id="sidebarMenu">
+                <!-- Menu items loaded by JS -->
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-outline-light btn-sm w-100" onclick="logout()">
+                    <i class="bi bi-box-arrow-left me-2"></i>Cerrar Sesión
+                </button>
+            </div>
+        </nav>
+
+        <!-- Page Content -->
+        <div id="content">
+            <!-- Top navbar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-outline-secondary">
+                        <i class="bi bi-list"></i>
+                    </button>
+
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="user-info me-3">
+                            <span class="fw-bold" id="userName"></span>
+                            <small class="text-muted d-block" id="userRole"></small>
+                        </div>
+                        <div class="avatar" id="userAvatar"></div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <div class="container-fluid py-4">
+                <div class="row mb-4">
+                    <div class="col">
+                        <h2 class="mb-0">
+                            <i class="bi bi-people-fill me-2 text-primary"></i>
+                            Gestión de Alumnos
+                        </h2>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAlumno">
+                            <i class="bi bi-plus-lg me-2"></i>Nuevo Alumno
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Buscar</label>
+                                <input type="text" class="form-control" id="searchInput"
+                                    placeholder="Buscar por código, nombre o DNI...">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Género</label>
+                                <select class="form-select" id="filterGenero">
+                                    <option value="">Todos</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Grado</label>
+                                <select class="form-select" id="filterGrado">
+                                    <option value="">Todos los grados</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Estado</label>
+                                <select class="form-select" id="filterEstado">
+                                    <option value="">Todos</option>
+                                    <option value="ACTIVO">Activo</option>
+                                    <option value="INACTIVO">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Apellidos y Nombres</th>
+                                        <th>DNI</th>
+                                        <th>Fecha Nac.</th>
+                                        <th>Género</th>
+                                        <th>Email</th>
+                                        <th>Estado</th>
+                                        <th width="120">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alumnosTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Cargando...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination -->
+                        <nav aria-label="Paginación" class="mt-3">
+                            <ul class="pagination justify-content-center" id="pagination">
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Alumno -->
+    <div class="modal fade" id="modalAlumno" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAlumnoTitle">Nuevo Alumno</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formAlumno">
+                        <input type="hidden" id="alumnoId">
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="alumnoCodigo" class="form-label">Código <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="alumnoCodigo" placeholder="Ej: ALU2024001"
+                                    required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="alumnoDni" class="form-label">DNI <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="alumnoDni" placeholder="8 dígitos"
+                                    maxlength="8" pattern="[0-9]{8}" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="alumnoNombres" class="form-label">Nombres <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="alumnoNombres"
+                                    placeholder="Nombres del alumno" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="alumnoApellidos" class="form-label">Apellidos <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="alumnoApellidos"
+                                    placeholder="Apellidos del alumno" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="alumnoFechaNacimiento" class="form-label">Fecha Nacimiento <span
+                                        class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="alumnoFechaNacimiento" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="alumnoGenero" class="form-label">Género <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="alumnoGenero" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="alumnoCelular" class="form-label">Celular</label>
+                                <input type="text" class="form-control" id="alumnoCelular" placeholder="9 dígitos"
+                                    maxlength="9" pattern="[0-9]{9}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="alumnoEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="alumnoEmail" placeholder="correo@ejemplo.com">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="alumnoDireccion" class="form-label">Dirección</label>
+                            <textarea class="form-control" id="alumnoDireccion" rows="2"
+                                placeholder="Dirección completa"></textarea>
+                        </div>
+
+                        <div class="alert alert-info small mb-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Nota:</strong> El código del alumno debe ser único. Se sugiere usar el formato ALU +
+                            AÑO + NÚMERO.
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i>Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Familiares -->
+    <div class="modal fade" id="modalFamiliares" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Gestionar Familiares</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="familiaresAlumnoId">
+
+                    <!-- Lista de Familiares Actuales -->
+                    <h6 class="mb-3">Familiares Asociados</h6>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>DNI</th>
+                                    <th>Relación</th>
+                                    <th>Principal</th>
+                                    <th width="100">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="familiaresTableBody">
+                                <!-- Cargado dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <hr>
+
+                    <!-- Agregar Nuevo Familiar -->
+                    <h6 class="mb-3">Agregar Familiar</h6>
+                    <form id="formAgregarFamiliar" class="row g-3 align-items-end">
+                        <div class="col-md-8 position-relative">
+                            <label class="form-label">Buscar Padre/Madre por DNI</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="buscarPadreDni"
+                                    placeholder="Ingrese DNI (8 dígitos)" maxlength="8">
+                                <button class="btn btn-outline-secondary" type="button" id="btnBuscarPadre">
+                                    <i class="bi bi-search"></i> Buscar
+                                </button>
+                            </div>
+
+                            <!-- Información del padre encontrado -->
+                            <div id="padreEncontradoInfo" class="alert alert-success mt-2 d-none small">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        <strong id="nombrePadreEncontrado"></strong>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="esPrincipal">
+                                        <label class="form-check-label" for="esPrincipal">Contacto principal</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Formulario para registrar nuevo padre -->
+                            <div id="padreNoEncontradoInfo" class="alert alert-warning mt-2 d-none">
+                                <h6 class="alert-heading">
+                                    <i class="bi bi-person-plus me-2"></i>Padre/Madre no encontrado
+                                </h6>
+                                <p class="mb-2 small">Complete los datos para registrar:</p>
+
+                                <form id="formRegistrarPadre" onsubmit="registrarNuevoPadre(event)">
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control form-control-sm"
+                                                id="nombresPadreNuevo" placeholder="Nombres *" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control form-control-sm"
+                                                id="apellidoPaternoPadreNuevo" placeholder="Apellido Paterno *"
+                                                required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control form-control-sm"
+                                                id="apellidoMaternoPadreNuevo" placeholder="Apellido Materno">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control form-control-sm" id="dniPadreNuevo"
+                                                placeholder="DNI *" maxlength="8" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="email" class="form-control form-control-sm"
+                                                id="emailPadreNuevo" placeholder="Email *" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control form-control-sm"
+                                                id="celularPadreNuevo" placeholder="Celular" maxlength="9">
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex gap-2 justify-content-end mt-2">
+                                                <button type="button" class="btn btn-sm btn-secondary"
+                                                    onclick="cancelarRegistroPadre()">
+                                                    Cancelar
+                                                </button>
+                                                <button type="submit" class="btn btn-sm btn-success">
+                                                    <i class="bi bi-save me-1"></i>Registrar Padre/Madre
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex flex-column align-items-end">
+                            <label class="form-label">Tipo Relación</label>
+                            <select class="form-select mb-2" id="nuevaRelacion" required>
+                                <option value="PADRE">Padre</option>
+                                <option value="MADRE">Madre</option>
+                                <option value="TUTOR">Tutor</option>
+                                <option value="APODERADO">Apoderado</option>
+                            </select>
+                            <button id="btnAgregarRelacion" class="btn btn-primary" type="submit" disabled>
+                                <i class="bi bi-plus-lg me-1"></i>Agregar
+                            </button>
+                        </div>
+                    </form>
+                    <input type="hidden" id="padreEncontradoId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/app-settings.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/backdrop-cleaner.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/alumnos.js"></script>
+</body>
+
+</html>

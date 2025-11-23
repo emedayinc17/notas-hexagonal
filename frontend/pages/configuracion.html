@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - Sistema de Gestión Académica</title>
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-circle">
+                    <i class="bi bi-mortarboard-fill text-white"></i>
+                </div>
+                <h4 class="mt-3">SGA</h4>
+                <p class="text-muted small">Sistema de Gestión</p>
+            </div>
+            
+            <ul class="sidebar-menu" id="sidebarMenu">
+                <!-- Menu generado dinámicamente -->
+            </ul>
+            
+            <div class="sidebar-footer">
+                <button class="btn btn-outline-light btn-sm w-100" onclick="logout()">
+                    <i class="bi bi-box-arrow-right me-2"></i>
+                    <span class="menu-text">Cerrar Sesión</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Page Content -->
+        <div id="content">
+            <!-- Navbar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-primary">
+                        <i class="bi bi-list"></i>
+                    </button>
+
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                                <div class="avatar me-2">
+                                    <span id="userInitials">AD</span>
+                                </div>
+                                <div class="user-info">
+                                    <span id="userName" class="fw-bold">admin</span>
+                                    <span id="userRole" class="badge bg-danger">ADMIN</span>
+                                </div>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Mi Perfil</a></li>
+                                <li><a class="dropdown-item" href="configuracion.html"><i class="bi bi-gear me-2"></i>Configuración</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <div class="content-wrapper">
+                <div class="row mb-4">
+                    <div class="col">
+                        <h2 class="fw-bold">
+                            <i class="bi bi-gear-fill text-primary me-2"></i>
+                            Configuración del Sistema
+                        </h2>
+                        <p class="text-muted">Personaliza el comportamiento de la aplicación</p>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mb-4" id="configTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pagination-tab" data-bs-toggle="tab" data-bs-target="#pagination" type="button">
+                            <i class="bi bi-layout-three-columns me-2"></i>Paginación
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="display-tab" data-bs-toggle="tab" data-bs-target="#display" type="button">
+                            <i class="bi bi-eye me-2"></i>Visualización
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="filters-tab" data-bs-toggle="tab" data-bs-target="#filters" type="button">
+                            <i class="bi bi-funnel me-2"></i>Filtros
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="configTabsContent">
+                    <!-- Paginación -->
+                    <div class="tab-pane fade show active" id="pagination" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">Configuración de Paginación</h5>
+                                
+                                <div class="mb-4">
+                                    <label for="itemsPerPage" class="form-label">
+                                        <i class="bi bi-list-ol me-2"></i>Elementos por página
+                                    </label>
+                                    <select class="form-select" id="itemsPerPage">
+                                        <option value="10">10 registros</option>
+                                        <option value="20" selected>20 registros</option>
+                                        <option value="30">30 registros</option>
+                                        <option value="50">50 registros</option>
+                                        <option value="100">100 registros</option>
+                                    </select>
+                                    <small class="text-muted">Cantidad de registros mostrados en cada página de las tablas</small>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="maxVisiblePages" class="form-label">
+                                        <i class="bi bi-display me-2"></i>Páginas visibles
+                                    </label>
+                                    <select class="form-select" id="maxVisiblePages">
+                                        <option value="3">3 páginas</option>
+                                        <option value="5" selected>5 páginas</option>
+                                        <option value="7">7 páginas</option>
+                                        <option value="10">10 páginas</option>
+                                    </select>
+                                    <small class="text-muted">Cantidad máxima de botones de página mostrados</small>
+                                </div>
+
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="showPageInfo" checked>
+                                    <label class="form-check-label" for="showPageInfo">
+                                        Mostrar información de paginación (ej: "Mostrando 1-20 de 100")
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visualización -->
+                    <div class="tab-pane fade" id="display" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">Configuración de Visualización</h5>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label">
+                                        <i class="bi bi-table me-2"></i>Estilo de tablas
+                                    </label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="stripedRows" checked>
+                                        <label class="form-check-label" for="stripedRows">
+                                            Filas alternadas (striped)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="hoverEffect" checked>
+                                        <label class="form-check-label" for="hoverEffect">
+                                            Efecto hover en filas
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="compactMode">
+                                        <label class="form-check-label" for="compactMode">
+                                            Modo compacto (menos espaciado)
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="dateFormat" class="form-label">
+                                        <i class="bi bi-calendar-date me-2"></i>Formato de fecha
+                                    </label>
+                                    <select class="form-select" id="dateFormat">
+                                        <option value="es-PE" selected>DD/MM/YYYY (Perú)</option>
+                                        <option value="en-US">MM/DD/YYYY (USA)</option>
+                                        <option value="iso">YYYY-MM-DD (ISO)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="tab-pane fade" id="filters" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">Configuración de Filtros</h5>
+                                
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="autoApply">
+                                        <label class="form-check-label" for="autoApply">
+                                            Aplicar filtros automáticamente
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Si está desactivado, se requiere presionar el botón "Filtrar"</small>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="debounceTime" class="form-label">
+                                        <i class="bi bi-clock me-2"></i>Tiempo de espera para búsqueda (ms)
+                                    </label>
+                                    <input type="number" class="form-control" id="debounceTime" value="500" min="100" max="2000" step="100">
+                                    <small class="text-muted">Tiempo de espera antes de aplicar búsqueda al escribir</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-outline-danger" onclick="resetSettings()">
+                                <i class="bi bi-arrow-counterclockwise me-2"></i>Restaurar valores por defecto
+                            </button>
+                            <div>
+                                <button class="btn btn-secondary me-2" onclick="window.history.back()">
+                                    <i class="bi bi-x-lg me-2"></i>Cancelar
+                                </button>
+                                <button class="btn btn-primary" onclick="saveSettings()">
+                                    <i class="bi bi-check-lg me-2"></i>Guardar cambios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="../js/config.js"></script>
+    <script src="../js/app-settings.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/backdrop-cleaner.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/configuracion.js"></script>
+</body>
+</html>
