@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from shared.common import get_settings, create_db_engine, create_session_factory
 from app.infrastructure.http import dependencies
 from app.infrastructure.http.router_admin import router as admin_router
+from app.infrastructure.http.router_padre import router as padre_router
+from app.infrastructure.http.router_docente import router as docente_router
 
 settings = get_settings()
 settings.APP_NAME = "Personas Service"
@@ -36,6 +38,8 @@ app.add_middleware(
 )
 
 app.include_router(admin_router)
+app.include_router(padre_router)
+app.include_router(docente_router)
 
 @app.get("/")
 async def root():

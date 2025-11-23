@@ -18,6 +18,8 @@ class CreateAlumnoUseCase:
         genero: str,
         dni: str = None,
         email: str = None,
+        direccion: str = None,
+        telefono: str = None,
     ) -> Alumno:
         # Validar código único
         existing = self.alumno_repository.find_by_codigo(codigo_alumno)
@@ -39,6 +41,8 @@ class CreateAlumnoUseCase:
             genero=genero,
             dni=dni,
             email=email,
+            direccion=direccion,
+            telefono=telefono,
             status="ACTIVO",
         )
         

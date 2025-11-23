@@ -545,7 +545,7 @@ CREATE TABLE IF NOT EXISTS tipos_evaluacion (
     CHECK (peso_default IS NULL OR (peso_default >= 0 AND peso_default <= 100))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabla: notas
+-- Tabla: notas (extendida para soporte dinámico)
 CREATE TABLE IF NOT EXISTS notas (
     id CHAR(36) NOT NULL PRIMARY KEY,
     matricula_clase_id CHAR(36) NOT NULL,
@@ -558,9 +558,15 @@ CREATE TABLE IF NOT EXISTS notas (
     observaciones TEXT,
     fecha_registro DATE NOT NULL,
     registrado_por_user_id CHAR(36) NOT NULL,
+    
+    -- Campos adicionales para sistema dinámico
+    columna_nota VARCHAR(20) DEFAULT 'N1' COMMENT 'Identifica la columna de nota (N1, N2, N3, N4, N5, etc.)',
+    metadata_json JSON COMMENT 'Metadatos adicionales para notas dinámicas',
+    
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
     FOREIGN KEY (tipo_evaluacion_id) REFERENCES tipos_evaluacion(id),
     INDEX idx_matricula (matricula_clase_id),
     INDEX idx_tipo_evaluacion (tipo_evaluacion_id),
@@ -568,7 +574,13 @@ CREATE TABLE IF NOT EXISTS notas (
     INDEX idx_escala (escala_id),
     INDEX idx_fecha (fecha_registro),
     INDEX idx_registrado_por (registrado_por_user_id),
-    CHECK (valor_literal IS NOT NULL OR valor_numerico IS NOT NULL)
+    INDEX idx_columna_nota (columna_nota),
+    
+    -- Índice compuesto para búsquedas de notas por alumno-curso-columna
+    UNIQUE KEY unique_nota_columna (matricula_clase_id, tipo_evaluacion_id, periodo_id, columna_nota),
+    
+    CHECK (valor_literal IS NOT NULL OR valor_numerico IS NOT NULL),
+    CHECK (metadata_json IS NULL OR JSON_VALID(metadata_json))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabla: alertas_notificacion

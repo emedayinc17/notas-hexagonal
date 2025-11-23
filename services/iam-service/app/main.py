@@ -5,6 +5,7 @@ from shared.common import get_settings, create_db_engine, create_session_factory
 from app.infrastructure.http import dependencies
 from app.infrastructure.http.router_public import router as public_router
 from app.infrastructure.http.router_admin import router as admin_router
+from app.infrastructure.http.router_docente import router as docente_router
 
 
 # Configuración
@@ -46,6 +47,7 @@ app.add_middleware(
 # Registrar routers
 app.include_router(public_router)
 app.include_router(admin_router)
+app.include_router(docente_router)
 
 
 @app.get("/")

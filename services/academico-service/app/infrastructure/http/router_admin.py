@@ -956,6 +956,71 @@ async def get_clases_docente(
         )
 
 
+@router.get("/clases/{clase_id}/alumnos")
+async def get_alumnos_de_clase(
+    clase_id: str,
+    authorization: Optional[str] = Header(None),
+    settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    """Obtener alumnos matriculados en una clase - para ADMIN y DOCENTE"""
+    try:
+        token = extract_bearer_token(authorization)
+        payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        user_id = payload.get("user_id")
+        rol = payload.get("rol_nombre")
+        
+        if rol not in ["ADMIN", "DOCENTE"]:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"error": "Forbidden", "message": "Solo ADMIN o DOCENTE pueden ver alumnos"}
+            )
+        
+        # Si es docente, verificar que la clase le pertenece
+        if rol == "DOCENTE":
+            from app.infrastructure.db.models import ClaseModel
+            clase = db.query(ClaseModel).filter(
+                ClaseModel.id == clase_id,
+                ClaseModel.docente_user_id == user_id,
+                ClaseModel.status == "ACTIVA"
+            ).first()
+            
+            if not clase:
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content={"error": "Forbidden", "message": "No tienes acceso a esta clase"}
+                )
+        
+        # Hacer llamada al servicio de personas para obtener alumnos matriculados
+        import httpx
+        async with httpx.AsyncClient() as client:
+            personas_url = "http://localhost:8003/v1/admin/clases/{}/alumnos".format(clase_id)
+            headers = {"Authorization": authorization} if authorization else {}
+            
+            response = await client.get(personas_url, headers=headers)
+            
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 404:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content={"error": "NotFound", "message": "Clase no encontrada o sin alumnos matriculados"}
+                )
+            else:
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content={"error": "INTERNAL_ERROR", "message": "Error al obtener alumnos"}
+                )
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "INTERNAL_ERROR", "message": str(e)}
+        )
+
+
 @router.get("/escalas")
 async def list_escalas(
     offset: int = Query(0, ge=0),
@@ -979,6 +1044,150 @@ async def list_escalas(
                 } for e in escalas
             ],
             "total": len(escalas),
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "INTERNAL_ERROR", "message": str(e)}
+        )
+
+
+@router.get("/admin/escalas")
+async def list_escalas_admin(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    authorization: Optional[str] = Header(None),
+    settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    """Listar escalas de calificación (Solo ADMIN)"""
+    try:
+        token = extract_bearer_token(authorization)
+        payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        rol = payload.get("rol_nombre")
+        
+        if rol != "ADMIN":
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"error": "Forbidden", "message": "Solo ADMIN puede acceder a este endpoint"}
+            )
+
+        from app.infrastructure.db.repositories import SqlAlchemyEscalaCalificacionRepository
+        repo = SqlAlchemyEscalaCalificacionRepository(db)
+        escalas = repo.find_all(offset=offset, limit=limit)
+        return {
+            "escalas": [
+                {
+                    "id": e.id,
+                    "nombre": e.nombre,
+                    "tipo": e.tipo.value if hasattr(e.tipo, 'value') else e.tipo,
+                    "valor_minimo": float(e.valor_minimo) if e.valor_minimo else None,
+                    "valor_maximo": float(e.valor_maximo) if e.valor_maximo else None,
+                    "status": e.status,
+                } for e in escalas
+            ],
+            "total": len(escalas),
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "INTERNAL_ERROR", "message": str(e)}
+        )
+
+
+@router.get("/docente/escalas")
+async def list_escalas_docente(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    authorization: Optional[str] = Header(None),
+    settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    """Listar escalas de calificación (Solo DOCENTE)"""
+    try:
+        token = extract_bearer_token(authorization)
+        payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        rol = payload.get("rol_nombre")
+        
+        if rol != "DOCENTE":
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"error": "Forbidden", "message": "Solo DOCENTE puede acceder a este endpoint"}
+            )
+
+        from app.infrastructure.db.repositories import SqlAlchemyEscalaCalificacionRepository
+        repo = SqlAlchemyEscalaCalificacionRepository(db)
+        # Docentes solo deberían ver escalas activas (aunque find_all no filtra por status, solo is_deleted)
+        # Podríamos filtrar aquí si fuera necesario
+        escalas = repo.find_all(offset=offset, limit=limit)
+        
+        # Filtrar solo activas en memoria si el repo no lo soporta
+        escalas_activas = [e for e in escalas if e.status == "ACTIVO"]
+        
+        return {
+            "escalas": [
+                {
+                    "id": e.id,
+                    "nombre": e.nombre,
+                    "tipo": e.tipo.value if hasattr(e.tipo, 'value') else e.tipo,
+                    "valor_minimo": float(e.valor_minimo) if e.valor_minimo else None,
+                    "valor_maximo": float(e.valor_maximo) if e.valor_maximo else None,
+                    "status": e.status,
+                } for e in escalas_activas
+            ],
+            "total": len(escalas_activas),
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "INTERNAL_ERROR", "message": str(e)}
+        )
+
+
+@router.get("/docentes-activos")
+async def get_docentes_activos(
+    authorization: Optional[str] = Header(None),
+    settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    """Obtener lista de docentes que tienen clases activas asignadas"""
+    try:
+        token = extract_bearer_token(authorization)
+        payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        rol = payload.get("rol_nombre")
+        
+        if rol != "ADMIN":
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"error": "Forbidden", "message": "Solo ADMIN"}
+            )
+        
+        from app.infrastructure.db.models import ClaseModel
+        # Obtener IDs únicos de docentes con clases activas
+        docentes_ids = db.query(ClaseModel.docente_user_id).filter(
+            ClaseModel.status == "ACTIVA"
+        ).distinct().all()
+        
+        docentes_info = []
+        for (docente_id,) in docentes_ids:
+            if docente_id:
+                # Información básica del docente (sin llamar a IAM)
+                docentes_info.append({
+                    "id": docente_id,
+                    "username": f"docente_{docente_id[:8]}",  # ID parcial como username
+                    "nombres": "Docente",
+                    "apellidos": "Activo"
+                })
+        
+        return {
+            "docentes": docentes_info,
+            "total": len(docentes_info)
         }
     except Exception as e:
         import traceback

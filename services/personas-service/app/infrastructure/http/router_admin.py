@@ -17,11 +17,13 @@ class CreateAlumnoRequest(BaseModel):
     codigo_alumno: str
     nombres: str
     apellido_paterno: str
-    apellido_materno: str
+    apellido_materno: Optional[str] = None
     fecha_nacimiento: date
     genero: str  # M, F, OTRO
     dni: Optional[str] = None
     email: Optional[str] = None
+    direccion: Optional[str] = None
+    telefono: Optional[str] = None
 
 
 class UpdateAlumnoRequest(BaseModel):
@@ -33,6 +35,8 @@ class UpdateAlumnoRequest(BaseModel):
     genero: Optional[str] = None
     dni: Optional[str] = None
     email: Optional[str] = None
+    direccion: Optional[str] = None
+    telefono: Optional[str] = None
 
 
 class CreatePadreRequest(BaseModel):
@@ -79,10 +83,15 @@ async def create_alumno(
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
         rol = payload.get("rol_nombre")
         
-        if rol != "ADMIN":
+        # Robust check (case-insensitive)
+        if not rol or rol.upper() != "ADMIN":
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "Forbidden", "message": "Solo ADMIN puede crear alumnos"}
+                content={
+                    "error": "Forbidden", 
+                    "message": f"Solo ADMIN puede crear alumnos. Rol actual: {rol}",
+                    "debug_payload": payload # Remove in production
+                }
             )
         
         alumno = use_case.execute(
@@ -94,6 +103,8 @@ async def create_alumno(
             genero=request.genero,
             dni=request.dni,
             email=request.email,
+            direccion=request.direccion,
+            telefono=request.telefono,
         )
         
         return {
@@ -114,73 +125,11 @@ async def create_alumno(
 async def list_alumnos(
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    search: Optional[str] = Query(None, max_length=100),
     db: Session = Depends(get_db),
 ):
-    """
-    Lista alumnos con búsqueda opcional segura.
-    """
-    import re
-    import logging
     from app.infrastructure.db.repositories import SqlAlchemyAlumnoRepository
-    from app.infrastructure.db.models import AlumnoModel
-    
-    logger = logging.getLogger(__name__)
-    
-    # Validar parámetro de búsqueda si se proporciona
-    if search:
-        # Detectar patrones sospechosos de SQL Injection
-        suspicious_patterns = [
-            r"(\bDROP\b|\bDELETE\b|\bTRUNCATE\b|\bUPDATE\b|\bINSERT\b)",
-            r"(--|#|/\*|\*/)",
-            r"(\bUNION\b.*\bSELECT\b)",
-            r"(\bOR\b\s+\d+\s*=\s*\d+)",
-            r"(;|\bEXEC\b)",
-        ]
-        
-        for pattern in suspicious_patterns:
-            if re.search(pattern, search, re.IGNORECASE):
-                logger.warning(f"🚨 SQL Injection attempt detected: {search[:100]}")
-                return JSONResponse(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    content={"error": "Invalid search parameter"}
-                )
-        
-        # Validar longitud mínima
-        if len(search.strip()) < 2:
-            return JSONResponse(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                content={"error": "Search term must be at least 2 characters"}
-            )
-        
-        search = search.strip()
-    
-    # Si hay búsqueda, usar filtro seguro con ORM
-    if search:
-        # Búsqueda segura usando ORM (parametrizado automáticamente)
-        query = db.query(AlumnoModel).filter(
-            AlumnoModel.is_deleted == False
-        )
-        
-        # Buscar en múltiples campos usando OR (todo parametrizado por SQLAlchemy)
-        search_filter = (
-            AlumnoModel.nombres.ilike(f"%{search}%") |
-            AlumnoModel.apellido_paterno.ilike(f"%{search}%") |
-            AlumnoModel.apellido_materno.ilike(f"%{search}%") |
-            AlumnoModel.dni.ilike(f"%{search}%") |
-            AlumnoModel.codigo_alumno.ilike(f"%{search}%")
-        )
-        
-        alumnos_models = query.filter(search_filter).offset(offset).limit(limit).all()
-        
-        # Convertir a objetos de dominio
-        from app.infrastructure.db.repositories import alumno_model_to_domain
-        alumnos = [alumno_model_to_domain(m) for m in alumnos_models]
-    else:
-        # Sin búsqueda, usar repositorio normal
-        repo = SqlAlchemyAlumnoRepository(db)
-        alumnos = repo.find_all(offset=offset, limit=limit)
-    
+    repo = SqlAlchemyAlumnoRepository(db)
+    alumnos = repo.find_all(offset=offset, limit=limit)
     return {
         "alumnos": [
             {
@@ -217,10 +166,10 @@ async def update_alumno(
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
         rol = payload.get("rol_nombre")
         
-        if rol != "ADMIN":
+        if not rol or rol.upper() != "ADMIN":
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "Forbidden", "message": "Solo ADMIN puede actualizar alumnos"}
+                content={"error": "Forbidden", "message": f"Solo ADMIN puede realizar esta acción. Rol: {rol}"}
             )
         
         from app.infrastructure.db.models import AlumnoModel
@@ -248,6 +197,10 @@ async def update_alumno(
             alumno_model.dni = request.dni
         if request.email is not None:
             alumno_model.email = request.email
+        if request.direccion is not None:
+            alumno_model.direccion = request.direccion
+        if request.telefono is not None:
+            alumno_model.telefono = request.telefono
         
         db.commit()
         db.refresh(alumno_model)
@@ -281,10 +234,10 @@ async def delete_alumno(
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
         rol = payload.get("rol_nombre")
         
-        if rol != "ADMIN":
+        if not rol or rol.upper() != "ADMIN":
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "Forbidden", "message": "Solo ADMIN puede eliminar alumnos"}
+                content={"error": "Forbidden", "message": f"Solo ADMIN puede realizar esta acción. Rol: {rol}"}
             )
         
         from app.infrastructure.db.models import AlumnoModel
@@ -321,10 +274,10 @@ async def create_padre(
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
         rol = payload.get("rol_nombre")
         
-        if rol != "ADMIN":
+        if not rol or rol.upper() != "ADMIN":
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "Forbidden", "message": "Solo ADMIN puede crear padres"}
+                content={"error": "Forbidden", "message": f"Solo ADMIN puede realizar esta acción. Rol: {rol}"}
             )
         
         padre = use_case.execute(
@@ -406,10 +359,10 @@ async def update_padre(
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
         rol = payload.get("rol_nombre")
         
-        if rol != "ADMIN":
+        if not rol or rol.upper() != "ADMIN":
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "Forbidden", "message": "Solo ADMIN puede actualizar padres"}
+                content={"error": "Forbidden", "message": f"Solo ADMIN puede realizar esta acción. Rol: {rol}"}
             )
         
         from app.infrastructure.db.models import PadreModel
@@ -466,10 +419,10 @@ async def delete_padre(
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
         rol = payload.get("rol_nombre")
         
-        if rol != "ADMIN":
+        if not rol or rol.upper() != "ADMIN":
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "Forbidden", "message": "Solo ADMIN puede eliminar padres"}
+                content={"error": "Forbidden", "message": f"Solo ADMIN puede realizar esta acción. Rol: {rol}"}
             )
         
         from app.infrastructure.db.models import PadreModel
@@ -506,10 +459,10 @@ async def link_padre_alumno(
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
         rol = payload.get("rol_nombre")
         
-        if rol != "ADMIN":
+        if not rol or rol.upper() != "ADMIN":
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "Forbidden", "message": "Solo ADMIN puede vincular padre-alumno"}
+                content={"error": "Forbidden", "message": f"Solo ADMIN puede realizar esta acción. Rol: {rol}"}
             )
         
         relacion = use_case.execute(
@@ -535,6 +488,17 @@ async def link_padre_alumno(
                     "message": "Esta relación padre-alumno ya existe"
                 }
             )
+        
+        # Manejar excepción de tipo de relación duplicada
+        if "TipoRelacionDuplicadaException" in str(type(e).__name__):
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={
+                    "error": "TIPO_RELACION_DUPLICADA", 
+                    "message": str(e)
+                }
+            )
+        
         # Manejar excepciones de dominio
         if hasattr(e, 'code') and hasattr(e, 'message'):
             return JSONResponse(
@@ -560,10 +524,10 @@ async def matricular_alumno(
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
         rol = payload.get("rol_nombre")
         
-        if rol != "ADMIN":
+        if not rol or rol.upper() != "ADMIN":
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "Forbidden", "message": "Solo ADMIN puede matricular alumnos"}
+                content={"error": "Forbidden", "message": f"Solo ADMIN puede realizar esta acción. Rol: {rol}"}
             )
         
         matricula = use_case.execute(
@@ -623,10 +587,10 @@ async def delete_matricula(
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
         rol = payload.get("rol_nombre")
         
-        if rol != "ADMIN":
+        if not rol or rol.upper() != "ADMIN":
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "Forbidden", "message": "Solo ADMIN puede eliminar matrículas"}
+                content={"error": "Forbidden", "message": f"Solo ADMIN puede realizar esta acción. Rol: {rol}"}
             )
         
         from app.infrastructure.db.models import MatriculaClaseModel
@@ -651,6 +615,51 @@ async def delete_matricula(
         )
 
 
+@router.delete("/relaciones/{relacion_id}")
+async def delete_relacion(
+    relacion_id: str,
+    authorization: Optional[str] = Header(None),
+    settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    """Eliminar relación padre-alumno"""
+    try:
+        token = extract_bearer_token(authorization)
+        payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        rol = payload.get("rol_nombre")
+        
+        if not rol or rol.upper() != "ADMIN":
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"error": "Forbidden", "message": f"Solo ADMIN puede realizar esta acción. Rol: {rol}"}
+            )
+        
+        from app.infrastructure.db.models import RelacionPadreAlumnoModel
+        relacion_model = db.query(RelacionPadreAlumnoModel).filter(
+            RelacionPadreAlumnoModel.id == relacion_id,
+            RelacionPadreAlumnoModel.is_deleted == False
+        ).first()
+        
+        if not relacion_model:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"error": "NotFound", "message": "Relación no encontrada"}
+            )
+        
+        # Soft delete
+        relacion_model.is_deleted = True
+        db.commit()
+        
+        return {"message": "Relación eliminada correctamente", "id": relacion_id}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "INTERNAL_ERROR", "message": str(e)}
+        )
+
+
 @router.get("/relaciones/alumno/{alumno_id}")
 async def get_padres_by_alumno(
     alumno_id: str,
@@ -660,22 +669,61 @@ async def get_padres_by_alumno(
     from app.infrastructure.db.repositories import SqlAlchemyRelacionPadreAlumnoRepository, SqlAlchemyPadreRepository
     relacion_repo = SqlAlchemyRelacionPadreAlumnoRepository(db)
     padre_repo = SqlAlchemyPadreRepository(db)
-    
     relaciones = relacion_repo.find_by_alumno(alumno_id)
-    padres = []
-    
+
+    # Construir respuesta con la forma que espera el frontend: { relaciones: [ { id, tipo_relacion, es_contacto_principal, padre: {...} } ] }
+    relaciones_json = []
     for rel in relaciones:
         padre = padre_repo.find_by_id(rel.padre_id)
-        if padre:
-            padres.append({
+        if not padre:
+            continue
+        relaciones_json.append({
+            "id": rel.id,
+            "tipo_relacion": rel.tipo_relacion,
+            "es_contacto_principal": rel.es_contacto_principal,
+            "padre": {
                 "id": padre.id,
                 "nombres": padre.nombres,
                 "apellido_paterno": padre.apellido_paterno,
+                "apellido_materno": padre.apellido_materno,
+                "apellidos": f"{padre.apellido_paterno} {padre.apellido_materno}".strip(),
+                "dni": padre.dni,
                 "email": padre.email,
-                "tipo_relacion": rel.tipo_relacion,
-            })
-    
-    return padres
+                "celular": padre.celular,
+            }
+        })
+
+    return {"relaciones": relaciones_json}
+
+
+@router.get("/relaciones/padre/{padre_id}")
+async def get_hijos_by_padre(
+    padre_id: str,
+    db: Session = Depends(get_db),
+):
+    """Devuelve los hijos (alumnos) vinculados a un padre en la forma que espera el frontend"""
+    from app.infrastructure.db.repositories import SqlAlchemyRelacionPadreAlumnoRepository, SqlAlchemyAlumnoRepository
+    relacion_repo = SqlAlchemyRelacionPadreAlumnoRepository(db)
+    alumno_repo = SqlAlchemyAlumnoRepository(db)
+
+    relaciones = relacion_repo.find_by_padre(padre_id)
+    hijos_json = []
+    for rel in relaciones:
+        alumno = alumno_repo.find_by_id(rel.alumno_id)
+        if not alumno:
+            continue
+        hijos_json.append({
+            "relacion_id": rel.id,
+            "alumno_id": alumno.id,
+            "nombres": alumno.nombres,
+            "apellido_paterno": alumno.apellido_paterno,
+            "apellido_materno": alumno.apellido_materno,
+            "apellidos": f"{alumno.apellido_paterno} {alumno.apellido_materno}".strip(),
+            "dni": alumno.dni,
+            "tipo_relacion": rel.tipo_relacion,
+        })
+
+    return {"hijos": hijos_json}
 
 
 @router.get("/matriculas/{matricula_id}")
@@ -700,3 +748,60 @@ async def get_matricula_info(
         "clase_id": matricula.clase_id,
         "status": matricula.status,
     }
+
+
+@router.get("/clases/{clase_id}/alumnos")
+async def get_alumnos_por_clase(
+    clase_id: str,
+    authorization: Optional[str] = Header(None),
+    settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    """Obtener alumnos matriculados en una clase específica"""
+    try:
+        token = extract_bearer_token(authorization)
+        payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        rol = payload.get("rol_nombre")
+        
+        if rol not in ["ADMIN", "DOCENTE"]:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"error": "Forbidden", "message": "Solo ADMIN o DOCENTE pueden ver alumnos"}
+            )
+        
+        from app.infrastructure.db.models import AlumnoModel, MatriculaClaseModel
+        # Query para obtener alumnos matriculados en la clase específica
+        query = db.query(AlumnoModel).join(
+            MatriculaClaseModel,
+            AlumnoModel.id == MatriculaClaseModel.alumno_id
+        ).filter(
+            MatriculaClaseModel.clase_id == clase_id,
+            MatriculaClaseModel.status == 'ACTIVO',
+            MatriculaClaseModel.is_deleted == False,
+            AlumnoModel.status == 'ACTIVO',
+            AlumnoModel.is_deleted == False
+        )
+        
+        alumnos_matriculados = query.all()
+        
+        return {
+            "alumnos": [
+                {
+                    "id": a.id,
+                    "codigo_alumno": a.codigo_alumno,
+                    "nombres": a.nombres,
+                    "apellidos": f"{a.apellido_paterno} {a.apellido_materno or ''}".strip(),
+                    "dni": a.dni,
+                    "status": a.status
+                } for a in alumnos_matriculados
+            ],
+            "total": len(alumnos_matriculados),
+            "clase_id": clase_id
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "INTERNAL_ERROR", "message": str(e)}
+        )
