@@ -1,0 +1,30 @@
+# Dockerfile para el Frontend
+# Imagen optimizada con Nginx para servir archivos estáticos
+
+FROM nginx:alpine
+
+# Metadata
+LABEL maintainer="tu-email@colegio.com"
+LABEL description="Frontend del Sistema de Gestión de Notas"
+LABEL version="1.0.0"
+
+# Copiar archivos del frontend al directorio de Nginx
+COPY frontend/ /usr/share/nginx/html/
+
+# Copiar configuración personalizada de Nginx (opcional)
+# COPY nginx.conf /etc/nginx/nginx.conf
+
+# El archivo config.js será montado desde el ConfigMap en Kubernetes
+# Por eso NO lo copiamos aquí, se sobrescribirá en runtime
+
+# Exponer puerto 80
+EXPOSE 80
+
+# Nginx se ejecuta en foreground por defecto
+CMD ["nginx", "-g", "daemon off;"]
+
+# ============================================
+# Comandos para construir y pushear la imagen:
+# ============================================
+# docker build -t tu-registry/sga-frontend:1.0.0 .
+# docker push tu-registry/sga-frontend:1.0.0

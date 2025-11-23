@@ -1,0 +1,169 @@
+# ============================================
+# ConfigMap para Frontend - Desarrollo
+# ============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config-dev
+  namespace: default
+  labels:
+    app: sga-frontend
+    environment: development
+data:
+  config.js: |
+    // Configuración generada desde ConfigMap de Kubernetes
+    // Ambiente: DESARROLLO
+    window.APP_CONFIG = {
+        API_ENDPOINTS: {
+            IAM_SERVICE: 'http://iam-service:8001',
+            ACADEMICO_SERVICE: 'http://academico-service:8002',
+            PERSONAS_SERVICE: 'http://personas-service:8003',
+            NOTAS_SERVICE: 'http://notas-service:8004'
+        },
+        
+        AUTH: {
+            TOKEN_KEY: 'sga_auth_token',
+            USER_KEY: 'sga_user_data',
+            TOKEN_EXPIRY_HOURS: 24
+        },
+        
+        APP: {
+            NAME: 'Sistema de Gestión de Notas',
+            VERSION: '1.0.0',
+            ENVIRONMENT: 'development'
+        },
+        
+        UI: {
+            ITEMS_PER_PAGE: 20,
+            MAX_ITEMS_PER_PAGE: 100,
+            TOAST_DURATION: 3000,
+            ALERT_DURATION: 5000
+        },
+        
+        FEATURES: {
+            ENABLE_REGISTRATION: true,
+            ENABLE_PASSWORD_RESET: false,
+            ENABLE_NOTIFICATIONS: true,
+            ENABLE_EXPORTS: true
+        },
+        
+        EXTERNAL: {
+            DOCS_URL: '/docs',
+            SUPPORT_URL: 'mailto:soporte@colegio.com',
+            HELP_URL: '/help'
+        }
+    };
+
+---
+# ============================================
+# ConfigMap para Frontend - Staging
+# ============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config-staging
+  namespace: default
+  labels:
+    app: sga-frontend
+    environment: staging
+data:
+  config.js: |
+    // Configuración generada desde ConfigMap de Kubernetes
+    // Ambiente: STAGING
+    window.APP_CONFIG = {
+        API_ENDPOINTS: {
+            IAM_SERVICE: 'http://iam-service.staging.svc.cluster.local:8001',
+            ACADEMICO_SERVICE: 'http://academico-service.staging.svc.cluster.local:8002',
+            PERSONAS_SERVICE: 'http://personas-service.staging.svc.cluster.local:8003',
+            NOTAS_SERVICE: 'http://notas-service.staging.svc.cluster.local:8004'
+        },
+        
+        AUTH: {
+            TOKEN_KEY: 'sga_auth_token',
+            USER_KEY: 'sga_user_data',
+            TOKEN_EXPIRY_HOURS: 12
+        },
+        
+        APP: {
+            NAME: 'Sistema de Gestión de Notas',
+            VERSION: '1.0.0',
+            ENVIRONMENT: 'staging'
+        },
+        
+        UI: {
+            ITEMS_PER_PAGE: 20,
+            MAX_ITEMS_PER_PAGE: 100,
+            TOAST_DURATION: 3000,
+            ALERT_DURATION: 5000
+        },
+        
+        FEATURES: {
+            ENABLE_REGISTRATION: true,
+            ENABLE_PASSWORD_RESET: true,
+            ENABLE_NOTIFICATIONS: true,
+            ENABLE_EXPORTS: true
+        },
+        
+        EXTERNAL: {
+            DOCS_URL: 'https://docs-staging.colegio.com',
+            SUPPORT_URL: 'mailto:soporte@colegio.com',
+            HELP_URL: 'https://help-staging.colegio.com'
+        }
+    };
+
+---
+# ============================================
+# ConfigMap para Frontend - Producción
+# ============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config-prod
+  namespace: production
+  labels:
+    app: sga-frontend
+    environment: production
+data:
+  config.js: |
+    // Configuración generada desde ConfigMap de Kubernetes
+    // Ambiente: PRODUCCIÓN
+    window.APP_CONFIG = {
+        API_ENDPOINTS: {
+            IAM_SERVICE: 'https://api.colegio.com/iam',
+            ACADEMICO_SERVICE: 'https://api.colegio.com/academico',
+            PERSONAS_SERVICE: 'https://api.colegio.com/personas',
+            NOTAS_SERVICE: 'https://api.colegio.com/notas'
+        },
+        
+        AUTH: {
+            TOKEN_KEY: 'sga_auth_token',
+            USER_KEY: 'sga_user_data',
+            TOKEN_EXPIRY_HOURS: 8
+        },
+        
+        APP: {
+            NAME: 'Sistema de Gestión de Notas',
+            VERSION: '1.0.0',
+            ENVIRONMENT: 'production'
+        },
+        
+        UI: {
+            ITEMS_PER_PAGE: 20,
+            MAX_ITEMS_PER_PAGE: 100,
+            TOAST_DURATION: 3000,
+            ALERT_DURATION: 5000
+        },
+        
+        FEATURES: {
+            ENABLE_REGISTRATION: false,
+            ENABLE_PASSWORD_RESET: true,
+            ENABLE_NOTIFICATIONS: true,
+            ENABLE_EXPORTS: true
+        },
+        
+        EXTERNAL: {
+            DOCS_URL: 'https://docs.colegio.com',
+            SUPPORT_URL: 'https://soporte.colegio.com',
+            HELP_URL: 'https://help.colegio.com'
+        }
+    };

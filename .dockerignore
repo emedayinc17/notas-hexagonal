@@ -1,0 +1,78 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+pyvenv.cfg
+Include/
+Lib/
+Scripts/
+share/
+
+# Services (backend code)
+services/
+shared/
+
+# Database
+database/
+
+# Docs
+docs/
+*.md
+!frontend/README.md
+
+# Tests
+test_*.py
+verify_*.py
+
+# Scripts
+*.ps1
+*.sh
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kubernetes (no needed in image)
+k8s/
+
+# Only keep frontend files
+!frontend/
+!Dockerfile.frontend
