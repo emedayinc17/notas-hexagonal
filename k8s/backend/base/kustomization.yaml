@@ -2,6 +2,7 @@ resources:
   - namespace.yaml
   - serviceaccount.yaml
   - services/iam/deploy-svc.yaml
+  - services/db_mysql/
   - services/academico/deploy-svc.yaml
   - services/personas/deploy-svc.yaml
   - services/notas/deploy-svc.yaml

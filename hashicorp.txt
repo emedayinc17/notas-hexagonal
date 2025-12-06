@@ -7,49 +7,76 @@
 #  - subir secretos de ejemplo (kv) para los microservicios: iam, academico, personas, notas
 #  - ejemplo de anotaciones en el Deployment para usar Vault Agent Inject
 
-## 1) Crear policy (lectura solo para los paths de la app)
+
+# 0) Conectarse a Vault (opción 1: desde fuera del pod)
+export VAULT_ADDR="http://vault.vault.svc:8200"
+
+# Opción 2: Si estás dentro del clúster, ejecuta en el pod de Vault
+kubectl -n vault exec -it statefulset/vault -c vault -- sh
+# Dentro del pod:
+export VAULT_ADDR="http://localhost:8200"
+# Inicializa y desbloquea si es necesario
+vault status
+# Si está sellado:
+vault operator unseal uAy8EiQpYvLo2DAiN43PiI2GiRiNI8CWN0Au4fVRXFM=
+
+
+# Obtén el token root (si tienes acceso)
+# En producción, usa tokens con privilegios limitados
+export VAULT_TOKEN="hvs.YOrWrzKTYAeEJ95twRPyO2p1"
+
+# Verifica conexión
+vault status
+
+## 1) Verificar secrets engines disponibles
+vault secrets list
+# Deberías ver kv/ en la lista
+
+## 2) Crear policy (lectura solo para los paths de la app)
 vault policy write notas-hexagonal-app - <<'EOF'
-# Si tu mount KV se llama `secret/` (KV v2) usa los paths `secret/data/...` y `secret/metadata/...`
-path "secret/data/notas-hexagonal/*" {
-  capabilities = ["read"]
+# Permite todas las operaciones CRUD en los datos en kv/
+path "kv/data/notas-hexagonal/*" {
+  capabilities = ["create", "update", "read", "list", "delete"]
 }
-path "secret/metadata/notas-hexagonal/*" {
-  capabilities = ["read"]
-}
-# Para permitir escrituras desde la CLI (vault kv put) añade create/update sobre el data path
-path "secret/data/notas-hexagonal/*" {
-  capabilities = ["create","update","read","list"]
+
+# Permite leer metadatos en kv/
+path "kv/metadata/notas-hexagonal/*" {
+  capabilities = ["read", "list"]
 }
 EOF
 
-## 1.1) Habilitar auth/kubernetes (si no está habilitado)
+# Verificar política creada
+vault policy read notas-hexagonal-app
+
+## 3) Habilitar auth/kubernetes (si no está habilitado)
+# Verifica si ya está habilitado
+vault auth list
+
+# Si no ves kubernetes, habilítalo
 vault auth enable kubernetes
 
-## 1.2) Configurar conexión con Kubernetes (ejecutar desde un pod o con credenciales apropiadas)
+# Configurar auth/kubernetes para que use el servicio de Kubernetes
+# Esto generalmente se hace durante la instalación de Vault, pero verifica:
 vault write auth/kubernetes/config \
+  kubernetes_host="https://kubernetes.default.svc" \
   token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
-  kubernetes_host="https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT" \
   kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
   issuer="https://kubernetes.default.svc.cluster.local"
 
-## 2) Crear el rol que enlaza la ServiceAccount de Kubernetes con la policy
-# Ajusta: bound_service_account_names y bound_service_account_namespaces según tu manifest
+## 4) Crear el rol que enlaza la ServiceAccount de Kubernetes con la policy
 vault write auth/kubernetes/role/notas-hexagonal-role \
   bound_service_account_names=sga-serviceaccount \
   bound_service_account_namespaces=sga \
   policies=notas-hexagonal-app \
-  ttl=24h \
-  audiences=vault
+  ttl=24h
+  # audience=vault  # Opcional: para Vault v1.21+
 
 # Verificar el rol
 vault read auth/kubernetes/role/notas-hexagonal-role
 
-## 3) Subir secretos (ejemplos para cada microservicio)
-# Sustituye valores por los de tu entorno. Usamos path: kv/notas-hexagonal/<servicio>
-
+## 5) Subir secretos (ejemplos para cada microservicio)
 # IAM
-## Nota: en este servidor Vault el mount KV está en `secret/` (KV v2). Usa `vault kv put secret/...` o `vault kv put secret/notas-hexagonal/iam`
-vault kv put secret/notas-hexagonal/iam \
+vault kv put kv/notas-hexagonal/iam \
   APP_ENV='prod' \
   DB_HOST='mysql.sga.svc.cluster.local' \
   DB_PORT='3306' \
@@ -60,7 +87,7 @@ vault kv put secret/notas-hexagonal/iam \
   ACCESS_TOKEN_EXPIRE_MINUTES='60'
 
 # Academico
-vault kv put secret/notas-hexagonal/academico \
+vault kv put kv/notas-hexagonal/academico \
   APP_ENV='prod' \
   DB_HOST='mysql.sga.svc.cluster.local' \
   DB_PORT='3306' \
@@ -71,7 +98,7 @@ vault kv put secret/notas-hexagonal/academico \
   ACCESS_TOKEN_EXPIRE_MINUTES='60'
 
 # Personas
-vault kv put secret/notas-hexagonal/personas \
+vault kv put kv/notas-hexagonal/personas \
   APP_ENV='prod' \
   DB_HOST='mysql.sga.svc.cluster.local' \
   DB_PORT='3306' \
@@ -82,7 +109,7 @@ vault kv put secret/notas-hexagonal/personas \
   ACCESS_TOKEN_EXPIRE_MINUTES='60'
 
 # Notas
-vault kv put secret/notas-hexagonal/notas \
+vault kv put kv/notas-hexagonal/notas \
   APP_ENV='prod' \
   DB_HOST='mysql.sga.svc.cluster.local' \
   DB_PORT='3306' \
@@ -92,53 +119,70 @@ vault kv put secret/notas-hexagonal/notas \
   JWT_SECRET='CHANGE_ME_STRONG' \
   ACCESS_TOKEN_EXPIRE_MINUTES='60'
 
-## 4) Verificar secretos
-vault kv get secret/notas-hexagonal/iam
-vault kv get secret/notas-hexagonal/academico
-vault kv get secret/notas-hexagonal/personas
-vault kv get secret/notas-hexagonal/notas
+## 6) Verificar secretos (CORREGIDO: usa kv/ en lugar de secret/)
+vault kv get kv/notas-hexagonal/iam
+vault kv get kv/notas-hexagonal/academico
+vault kv get kv/notas-hexagonal/personas
+vault kv get kv/notas-hexagonal/notas
 
-## 5) Ejemplo de Deployment (IAM) usando Vault Agent Inject
+# Listar todos los secretos en el path
+vault kv list kv/notas-hexagonal
+
+## 7) Probar la autenticación (opcional)
+# Para verificar que el rol funciona, puedes probar con:
+vault write auth/kubernetes/login role=notas-hexagonal-role jwt=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+
+## 8) Ejemplo de Deployment (IAM) usando Vault Agent Inject
 # Añade estas anotaciones al `metadata.template.metadata.annotations` de tu Deployment.
-# Esto inyectará un fichero `/vault/secrets/config` con el contenido renderizado por la plantilla.
 
+# ANOTACIONES CORRECTAS:
 vault.hashicorp.com/agent-inject: "true"
 vault.hashicorp.com/role: "notas-hexagonal-role"
 vault.hashicorp.com/agent-inject-secret-config: "kv/data/notas-hexagonal/iam"
 vault.hashicorp.com/agent-inject-template-config: |
   {{- with secret "kv/data/notas-hexagonal/iam" -}}
+  APP_NAME="IAM Service"
   APP_ENV={{ .Data.data.APP_ENV }}
   DB_HOST={{ .Data.data.DB_HOST }}
   DB_PORT={{ .Data.data.DB_PORT }}
   DB_USER={{ .Data.data.DB_USER }}
-  DB_PASS={{ .Data.data.DB_PASS }}
+  DB_PASSWORD={{ .Data.data.DB_PASS }}
   DB_NAME={{ .Data.data.DB_NAME }}
-  JWT_SECRET={{ .Data.data.JWT_SECRET }}
+  JWT_SECRET_KEY={{ .Data.data.JWT_SECRET }}
   ACCESS_TOKEN_EXPIRE_MINUTES={{ .Data.data.ACCESS_TOKEN_EXPIRE_MINUTES }}
   {{- end }}
 
-## 6) Ejemplo de `command/args` dentro del contenedor (para `iam-service`)
-# Este fragmento carga el fichero inyectado y exporta las variables antes de arrancar la app
-command: ["/bin/sh"]
-args:
-  - "-c"
-  - |
-    if [ -f /vault/secrets/config ]; then
-      . /vault/secrets/config
-    fi
-    export DB_HOST="${DB_HOST}"
-    export DB_PORT="${DB_PORT}"
-    export DB_USER="${DB_USER}"
-    export DB_PASS="${DB_PASS}"
-    export DB_NAME="${DB_NAME}"
-    export JWT_SECRET="${JWT_SECRET}"
-    exec uvicorn app.main:app --host 0.0.0.0 --port 8001
+## 9) Troubleshooting
+# Si los pods no pueden acceder a los secretos:
+# 1. Verifica los logs del sidecar de Vault:
+kubectl logs <pod-name> -c vault-agent -n sga
 
-## 7) Notas y recomendaciones
-- No poner secretos reales en repositorio Git. Usa el script `k8s/scripts/create_k8s_secret_from_env.sh` para generar Secrets temporales si no usas Vault.
-- Para producción, usa Vault + External Secrets Operator o Vault Agent Injector para no materializar secretos en YAML.
-- Asegúrate que la ServiceAccount usada en el Deployment (`sga-serviceaccount` en nuestro ejemplo) esté asociada con el rol que creaste en Vault (`notas-hexagonal-role`).
-- Reemplaza `notas-hexagonal` y los nombres de usuario/DB/contraseñas por los valores reales de tu entorno.
+# 2. Verifica que la ServiceAccount exista:
+kubectl get serviceaccount sga-serviceaccount -n sga
+
+# 3. Verifica que el pod esté usando la ServiceAccount correcta:
+kubectl describe pod <pod-name> -n sga | grep ServiceAccount
+
+# 4. Verifica que Vault esté accesible desde el namespace sga:
+kubectl exec -it <pod-name> -n sga -- curl -s http://vault.vault.svc:8200/v1/sys/health
+
+## 10) Comandos útiles para administración
+# Listar todas las políticas
+vault policy list
+
+# Eliminar un secreto
+vault kv delete kv/notas-hexagonal/iam
+
+# Rotar secretos
+vault kv put kv/notas-hexagonal/iam \
+  DB_PASS='NUEVA_CONTRASEÑA_2025' \
+  JWT_SECRET='NUEVO_SECRETO_FUERTE'
+
+# Ver metadatos de un secreto
+vault kv metadata get kv/notas-hexagonal/iam
+
+# Deshabilitar auth/kubernetes (cuidado)
+# vault auth disable kubernetes
 
 ---
 # Fin de hashicorp.txt
