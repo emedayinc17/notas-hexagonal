@@ -18,7 +18,7 @@ spec:
       serviceAccountName: sga-serviceaccount
       containers:
         - name: academico
-          image: emeday17/academico
+          image: emeday17/academico:1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 8002

@@ -33,7 +33,7 @@ spec:
       serviceAccountName: sga-serviceaccount
       containers:
         - name: iam
-          image: emeday17/iam
+          image: emeday17/iam:1.0.0
           imagePullPolicy: Always
           command: ["/bin/sh"]
           args:

@@ -18,7 +18,7 @@ spec:
       serviceAccountName: sga-serviceaccount
       containers:
         - name: personas
-          image: emeday17/personas
+          image: emeday17/personas:1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 8003
