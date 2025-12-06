@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  labels:
+    app: sga-frontend
+data:
+  # Example runtime config that your frontend can fetch or mount as file
+  FRONTEND_API_URL: "http://api.sga.local" # adjust to your cluster DNS or ingress
+  config.js: |
+    window.APP_CONFIG = {
+      API_BASE: "http://api.sga.local",
+    };

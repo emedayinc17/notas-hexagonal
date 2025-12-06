@@ -1,0 +1,29 @@
+# ConfigMap with default environment variables for backend services
+# Edit values and move sensitive values into Secrets before production.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-common-config
+  namespace: default
+  labels:
+    app: sga-backend
+data:
+  # Database defaults (override with Secrets in production)
+  DB_HOST: "mysql.svc.cluster.local"
+  DB_PORT: "3306"
+  DB_NAME_ACADEMICO: "sga_academico"
+  DB_NAME_PERSONAS: "sga_personas"
+  DB_NAME_NOTAS: "sga_notas"
+  DB_NAME_IAM: "sga_iam"
+
+  # Common app settings
+  LOG_LEVEL: "INFO"
+  JWT_SECRET_PLACEHOLDER: "CHANGE_ME"
+  DEFAULT_PAGE_SIZE: "20"
+  MAX_PAGE_SIZE: "100"
+
+  # Service internal names (used by frontend configmap and other services)
+  IAM_SERVICE_HOST: "iam-service"
+  ACADEMICO_SERVICE_HOST: "academico-service"
+  PERSONAS_SERVICE_HOST: "personas-service"
+  NOTAS_SERVICE_HOST: "notas-service"

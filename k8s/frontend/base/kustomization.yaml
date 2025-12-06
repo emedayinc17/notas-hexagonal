@@ -1,0 +1,10 @@
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+configMapGenerator:
+  - name: frontend-runtime
+    literals:
+      - API_BASE=http://api.sga.local

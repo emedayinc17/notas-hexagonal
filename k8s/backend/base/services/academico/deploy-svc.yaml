@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: academico-service
+  namespace: sga
+  labels:
+    app: academico-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: academico-service
+  template:
+    metadata:
+      labels:
+        app: academico-service
+    spec:
+      serviceAccountName: sga-serviceaccount
+      containers:
+        - name: academico
+          image: tu-registry/academico-service:latest
+          ports:
+            - containerPort: 8002
+          env:
+            - name: DATABASE_URL
+              value: "mysql://user:pass@mysql.sga.svc.cluster.local:3306/sga_academico"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: academico-service
+  namespace: sga
+spec:
+  selector:
+    app: academico-service
+  ports:
+    - protocol: TCP
+      port: 8002
+      targetPort: 8002

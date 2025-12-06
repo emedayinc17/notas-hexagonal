@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: personas-service
+  namespace: sga
+  labels:
+    app: personas-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: personas-service
+  template:
+    metadata:
+      labels:
+        app: personas-service
+    spec:
+      serviceAccountName: sga-serviceaccount
+      containers:
+        - name: personas
+          image: tu-registry/personas-service:latest
+          ports:
+            - containerPort: 8003
+          env:
+            - name: DATABASE_URL
+              value: "mysql://user:pass@mysql.sga.svc.cluster.local:3306/sga_personas"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: personas-service
+  namespace: sga
+spec:
+  selector:
+    app: personas-service
+  ports:
+    - protocol: TCP
+      port: 8003
+      targetPort: 8003

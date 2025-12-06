@@ -1,0 +1,16 @@
+resources:
+  - ../../frontend/base
+
+patchesStrategicMerge:
+  # Example: replace image with your production image
+  - |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: sga-frontend
+    spec:
+      template:
+        spec:
+          containers:
+            - name: sga-frontend
+              image: tu-registry/sga-frontend:prod

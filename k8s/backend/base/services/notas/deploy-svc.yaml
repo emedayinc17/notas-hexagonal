@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notas-service
+  namespace: sga
+  labels:
+    app: notas-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notas-service
+  template:
+    metadata:
+      labels:
+        app: notas-service
+    spec:
+      serviceAccountName: sga-serviceaccount
+      containers:
+        - name: notas
+          image: tu-registry/notas-service:latest
+          ports:
+            - containerPort: 8004
+          env:
+            - name: DATABASE_URL
+              value: "mysql://user:pass@mysql.sga.svc.cluster.local:3306/sga_notas"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: notas-service
+  namespace: sga
+spec:
+  selector:
+    app: notas-service
+  ports:
+    - protocol: TCP
+      port: 8004
+      targetPort: 8004

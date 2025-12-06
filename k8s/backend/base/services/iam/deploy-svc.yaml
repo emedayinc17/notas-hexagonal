@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iam-service
+  namespace: sga
+  labels:
+    app: iam-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iam-service
+  template:
+    metadata:
+      labels:
+        app: iam-service
+    spec:
+      serviceAccountName: sga-serviceaccount
+      containers:
+        - name: iam
+          image: tu-registry/iam-service:latest
+          ports:
+            - containerPort: 8001
+          env:
+            - name: DATABASE_URL
+              value: "mysql://user:pass@mysql.sga.svc.cluster.local:3306/sga_iam"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: iam-service
+  namespace: sga
+spec:
+  selector:
+    app: iam-service
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001
