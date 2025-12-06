@@ -10,4 +10,4 @@ resources:
   - services/academico/deploy-svc.yaml
   - services/personas/deploy-svc.yaml
   - services/notas/deploy-svc.yaml
-  - ingress.yaml        # 👈 nuevo ingress backend
+  - ingress.yaml
