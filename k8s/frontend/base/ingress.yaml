@@ -5,8 +5,9 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
+  ingressClassName: nginx
   rules:
-    - host: frontend.sga.local # adjust to your DNS
+    - host: frontend-sga.emeday.inc
       http:
         paths:
           - path: /
