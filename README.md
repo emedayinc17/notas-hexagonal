@@ -97,6 +97,40 @@ Luego abre: **http://localhost:8080**
 
 ---
 
+## **Últimas Actualizaciones (Dic 2025)**
+
+- **Admin - Notas temporalmente deshabilitado**: para evitar cargas o fallos en producción local, la entrada "Gestionar Notas" fue retirada del menú `ADMIN` y la página de `notas.html` redirige al `dashboard` para administradores. Archivo afectado: `frontend/js/notas.js`.
+  - Revertir temporalmente: editar `frontend/js/notas.js` y quitar la rama que detecta `userRole === 'ADMIN'` que muestra el toast y redirige, o revertir el commit correspondiente.
+
+- **Paginación por servidor en Notas (frontend)**: la vista admin de Notas ahora soporta paginación por servidor (solicita páginas con `offset`/`limit`) en lugar de descargar todo el conjunto. Esto mejora rendimiento en datasets grandes y hace que los filtros funcionen sobre el conjunto completo siempre que el backend aplique los filtros.
+  - Nuevo método cliente: `NotasService.listNotasAdmin(filters, offset, limit)` en `frontend/js/api.js` (envía `periodo_id`, `grado_id`, `seccion_id`, `curso_id`, `search`, `offset`, `limit`).
+  - UI: `#filtroBusquedaAdmin`, `#adminPageSize` y controles de paginación `#notasPagination` fueron añadidos a `frontend/js/notas.js`.
+
+- **Enriquecimiento y robustez**: el frontend añade enriquecimiento desde `matriculas` cuando la respuesta del backend no incluye metadata (grado, seccion, curso, docente). También se añadieron utilidades y correcciones menores:
+  - `escapeHtml(str)` en `frontend/js/utils.js` para sanear salidas HTML.
+  - Eliminada declaración duplicada `alumnoData` en `frontend/js/notas-siagie.js`.
+  - Lógica de normalización/enriquecimiento por página en `frontend/js/notas.js`.
+
+- **Backend (notas-service)**: se incrementó el límite tolerado a 1000 y se endureció la conversión de filas para tolerar distintos tipos de filas del driver DB en `services/notas-service/app/infrastructure/http/router_admin.py`.
+  - Nota importante: si el backend devuelve respuestas sin metadata (p. ej. por permisos DB faltantes en `sga_academico.clases`), la UI hace un intento de enriquecimiento local, pero lo ideal es otorgar permisos correctos al usuario de BD (`app_notas`) para que el endpoint devuelva la metadata completa y el conteo total (`total`) para paginación precisa.
+
+**Consejo rápido para comprobar la paginación y filtros:**
+
+1. Reinicia servicios:
+```powershell
+.\start_all_services.ps1
+```
+2. Abre el frontend: `http://localhost:8080` y haz login como `ADMIN` o `DOCENTE`.
+3. En el panel Admin → Notas (si reactivas el acceso), observa en DevTools → Network la petición a `/v1/notas` y verifica que envía `offset`, `limit` y los filtros (`periodo_id`, `grado_id`, `seccion_id`, `curso_id`, `search`).
+4. Si el backend devuelve `total` en la respuesta, la paginación mostrará el número real de páginas; si no, la interfaz intentará inferir paginación por la respuesta recibida.
+
+Si quieres que me encargue de:
+- habilitar el endpoint para que acepte y aplique los filtros en el backend, y devolver `total` en la respuesta; o
+- revertir la desactivación temporal de la vista admin de Notas para pruebas;
+dímelo y lo implemento.
+
+---
+
 ## ☸️ Despliegue en Kubernetes
 
 ### Prerequisitos
