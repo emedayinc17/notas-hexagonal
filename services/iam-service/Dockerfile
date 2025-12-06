@@ -5,14 +5,15 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential gcc && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
-# allow service directory to be passed as build-arg
-# Copy requirements from service directory and install
 COPY services/iam-service/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared package and service app
 COPY shared/ ./shared/
 COPY services/iam-service/app/ ./app/
+
+# 👉 Copiar el .env del servicio al WORKDIR (/app)
+COPY services/iam-service/.env .env
 
 EXPOSE 8001
 

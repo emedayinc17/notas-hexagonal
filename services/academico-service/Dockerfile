@@ -3,13 +3,14 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential gcc && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements from service directory and install
 COPY services/academico-service/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy shared package and service app
 COPY shared/ ./shared/
 COPY services/academico-service/app/ ./app/
+
+# 👉 Copiar .env
+COPY services/academico-service/.env .env
 
 EXPOSE 8002
 
