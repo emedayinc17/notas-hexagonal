@@ -9,9 +9,15 @@ pydantic-settings==2.1.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
+
+# Cliente HTTP para hablar con otros servicios
 httpx==0.25.2
 
+# Validación de email compatible con Pydantic v2
 email-validator==2.3.0
+
+# Manejo de export / import Excel
 openpyxl==3.1.2
 
-
+# Backend de hashing compatible con passlib 1.7.4
+bcrypt==3.2.2

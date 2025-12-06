@@ -10,5 +10,8 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 
-# 🔧 OJO: compatible con Pydantic v2
+# Validación de email compatible con Pydantic v2
 email-validator==2.3.0
+
+# Backend de hashing compatible con passlib 1.7.4
+bcrypt==3.2.2
