@@ -1,11 +1,15 @@
 resources:
   - ../../base
 
-patchesStrategicMerge:
-  - |-
-    apiVersion: apps/v1
-    kind: Deployment
-    metadata:
+# Use the newer 'patches' with explicit target so kustomize can find the Deployment
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
       name: iam-service
-    spec:
-      replicas: 1
+      namespace: sga
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
