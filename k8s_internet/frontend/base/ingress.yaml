@@ -5,11 +5,11 @@ metadata:
   namespace: sga
   annotations:
     kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:
-    - host: sgaweb.emeday.inc          # mismo host que el backend
-      http:
+    - http:  # ¡Sin 'host:'! Esto acepta cualquier host/IP
         paths:
           - path: /
             pathType: Prefix
