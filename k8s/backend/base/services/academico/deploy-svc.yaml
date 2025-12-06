@@ -21,9 +21,9 @@ spec:
           image: tu-registry/academico-service:latest
           ports:
             - containerPort: 8002
-          env:
-            - name: DATABASE_URL
-              value: "mysql://user:pass@mysql.sga.svc.cluster.local:3306/sga_academico"
+          envFrom:
+            - secretRef:
+                name: sga-secrets
 
 ---
 

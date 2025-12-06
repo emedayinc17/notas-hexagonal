@@ -21,9 +21,9 @@ spec:
           image: tu-registry/notas-service:latest
           ports:
             - containerPort: 8004
-          env:
-            - name: DATABASE_URL
-              value: "mysql://user:pass@mysql.sga.svc.cluster.local:3306/sga_notas"
+          envFrom:
+            - secretRef:
+                name: sga-secrets
 
 ---
 

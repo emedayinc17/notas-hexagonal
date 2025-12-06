@@ -21,9 +21,9 @@ spec:
           image: tu-registry/iam-service:latest
           ports:
             - containerPort: 8001
-          env:
-            - name: DATABASE_URL
-              value: "mysql://user:pass@mysql.sga.svc.cluster.local:3306/sga_iam"
+          envFrom:
+            - secretRef:
+                name: sga-secrets
 
 ---
 
