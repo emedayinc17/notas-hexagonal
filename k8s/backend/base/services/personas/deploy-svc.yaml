@@ -19,6 +19,7 @@ spec:
       containers:
         - name: personas
           image: emeday17/personas:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8003
           envFrom:

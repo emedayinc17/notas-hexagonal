@@ -34,6 +34,7 @@ spec:
       containers:
         - name: iam
           image: emeday17/iam:latest
+          imagePullPolicy: Always
           command: ["/bin/sh"]
           args:
             - "-c"

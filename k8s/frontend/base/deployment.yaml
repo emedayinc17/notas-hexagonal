@@ -18,6 +18,7 @@ spec:
         - name: sga-frontend
           # Replace image with your built frontend image (see Dockerfile.frontend)
           image: emeday17/frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           env:
