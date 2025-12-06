@@ -37,8 +37,8 @@ spec:
             - name: mycnf
               mountPath: /etc/mysql/conf.d
             # ConfigMap con tus .sql (kustomize configMapGenerator)
-            - name: init-scripts
-              mountPath: /docker-entrypoint-initdb.d
+            #- name: init-scripts
+            #  mountPath: /docker-entrypoint-initdb.d
           # ✅ Ejecuta los .sql tras arrancar mysqld (evita deadlock del initContainer)
           lifecycle:
             postStart:
@@ -92,9 +92,9 @@ spec:
             items:
               - key: my.cnf
                 path: my.cnf
-        - name: init-scripts
-          configMap:
-            name: mysql-init-scripts
+        #- name: init-scripts
+        #  configMap:
+        #    name: mysql-init-scripts
   volumeClaimTemplates:
     - metadata:
         name: data
