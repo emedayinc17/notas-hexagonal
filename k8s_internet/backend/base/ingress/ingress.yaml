@@ -10,7 +10,7 @@ metadata:
     
     # 👇 CORS actualizado para Azure
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "*"  # O tu IP de Azure
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Accept"
     nginx.ingress.kubernetes.io/cors-expose-headers: "Content-Length,Content-Range"
@@ -52,8 +52,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - http:  # Sin host específico
-    http:
+  - http:  # ✅ Solo UN "http:" aquí
       paths:
       # ============================================
       # 🔵 SERVICIO IAM (http://TU_IP/iam)
