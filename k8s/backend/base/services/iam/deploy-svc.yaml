@@ -20,12 +20,29 @@ spec:
         - name: iam
           image: emeday17/iam:1.0.0
           imagePullPolicy: Always
-          # El contenedor usará el CMD del Dockerfile (uvicorn app.main:app ...)
-          env:
-            - name: DB_HOST
-              value: "mysql.sga.svc.cluster.local"
           ports:
-            - containerPort: 8001
+            - name: http
+              containerPort: 8001
+          # 👇 Sin Vault; la config se carga desde el .env incluido en la imagen
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
 ---
 apiVersion: v1
 kind: Service
@@ -36,6 +53,6 @@ spec:
   selector:
     app: iam-service
   ports:
-    - protocol: TCP
+    - name: http
       port: 8001
       targetPort: 8001

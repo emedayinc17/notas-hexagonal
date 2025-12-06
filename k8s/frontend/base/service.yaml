@@ -1,14 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: sga-frontend
+  name: eventos-frontend
+  namespace: eventos-peru
   labels:
-    app: sga-frontend
+    app: eventos-frontend
 spec:
   type: ClusterIP
   selector:
-    app: sga-frontend
+    app: eventos-frontend
   ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 80
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http

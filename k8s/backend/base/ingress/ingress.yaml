@@ -4,19 +4,24 @@ metadata:
   name: sga-api
   namespace: sga
   annotations:
-    # Ajusta según tu IngressController (si usas nginx en MicroK8s)
+    # Usa la clase real del Ingress Controller en tu cluster
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: "*"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type, Accept, Origin, X-Requested-With"
+    nginx.ingress.kubernetes.io/limit-rps: "20"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-hide-headers: "Strict-Transport-Security"
 spec:
-  ingressClassName: nginx          # o la clase que estés usando en tu cluster
+  ingressClassName: nginx
   rules:
-    - host: sga-api.emeday.inc         # 👈 coincide con API_BASE del frontend
+    - host: sga.emeday.inc    # cámbialo si quieres otro dominio
       http:
         paths:
+          # ============================================================
+          # 🔵 ACCESO DIRECTO A MICROSERVICIOS (Swagger/docs, APIs)
+          # ============================================================
           - path: /iam
             pathType: Prefix
             backend:

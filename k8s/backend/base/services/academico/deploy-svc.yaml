@@ -20,11 +20,30 @@ spec:
         - name: academico
           image: emeday17/academico:1.0.0
           imagePullPolicy: Always
-          env:
-            - name: DB_HOST
-              value: "mysql.sga.svc.cluster.local"
           ports:
-            - containerPort: 8002
+            - name: http
+              containerPort: 8002
+          # 👇 Ya no usamos Vault ni EV_SETTINGS_ENV_FILE.
+          # La configuración se carga desde el .env incluido en la imagen.
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
 ---
 apiVersion: v1
 kind: Service
@@ -35,6 +54,6 @@ spec:
   selector:
     app: academico-service
   ports:
-    - protocol: TCP
+    - name: http
       port: 8002
       targetPort: 8002

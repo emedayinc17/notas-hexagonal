@@ -1,19 +1,22 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: sga-frontend-ingress
+  name: eventos-frontend
+  namespace: eventos-peru
+  labels:
+    argocd.argoproj.io/instance: eventos-peru-frontend
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: public
 spec:
-  ingressClassName: nginx
+  ingressClassName: public
   rules:
-    - host: frontend-sga.emeday.inc
+    - host: eventos.emeday.inc
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: sga-frontend
+                name: eventos-frontend
                 port:
                   number: 80

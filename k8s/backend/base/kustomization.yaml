@@ -5,10 +5,11 @@ namespace: sga
 resources:
   - namespace.yaml
   - serviceaccount.yaml
-  - sga-secrets.yaml
-  - services/db_mysql/
+  - ingress/ingress.yaml
+  - services/db_mysql
   - services/iam/deploy-svc.yaml
   - services/academico/deploy-svc.yaml
-  - services/personas/deploy-svc.yaml
   - services/notas/deploy-svc.yaml
-  - ingress.yaml
+  - services/personas/deploy-svc.yaml
+
+# Image overrides are handled in overlays (dev/prod) to keep base generic.
