@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: notas
+spec:
+  destination:
+    namespace: sga
+    server: https://kubernetes.default.svc
+  source:
+    path: k8s/backend/overlays/dev
+    repoURL: https://github.com/emedayinc17/notas-hexagonal
+    targetRevision: main
+  sources: []
+  project: default
+  syncPolicy:
+    syncOptions:
+      - PruneLast=true

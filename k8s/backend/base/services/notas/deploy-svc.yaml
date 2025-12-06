@@ -18,7 +18,7 @@ spec:
       serviceAccountName: sga-serviceaccount
       containers:
         - name: notas
-          image: emeday17/notas:latest
+          image: emeday17/notas:
           imagePullPolicy: Always
           ports:
             - containerPort: 8004
