@@ -36,38 +36,6 @@ spec:
               mountPath: /var/lib/mysql
             - name: mycnf
               mountPath: /etc/mysql/conf.d
-            # ConfigMap con tus .sql (kustomize configMapGenerator)
-            - name: init-scripts
-              mountPath: /docker-entrypoint-initdb.d
-          # ✅ Ejecuta los .sql tras arrancar mysqld (evita deadlock del initContainer)
-          lifecycle:
-            postStart:
-              exec:
-                command:
-                  - sh
-                  - -lc
-                  - |
-                    (
-                      echo "[postStart] esperando MySQL..."
-                      # espera hasta 120s a que responda
-                      for i in $(seq 1 60); do
-                        if mysqladmin ping -uroot -p"$MYSQL_ROOT_PASSWORD" --silent; then
-                          break
-                        fi
-                        sleep 2
-                      done
-                      if ! mysqladmin ping -uroot -p"$MYSQL_ROOT_PASSWORD" --silent; then
-                        echo "[postStart] MySQL no respondió a tiempo, continúo igualmente."
-                      fi
-                      echo "[postStart] ejecutando *.sql en /docker-entrypoint-initdb.d"
-                      for f in /docker-entrypoint-initdb.d/*.sql; do
-                        [ -f "$f" ] || continue
-                        echo ">> $f"
-                        # que sea idempotente: si falla un script, no tumbes el contenedor
-                        mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$f" || true
-                      done
-                      echo "[postStart] scripts terminados"
-                    ) >> /var/log/mysql-init-scripts.log 2>&1 &
           readinessProbe:
             exec:
               command: ["sh","-lc","mysqladmin ping -uroot -p$MYSQL_ROOT_PASSWORD"]
@@ -92,9 +60,6 @@ spec:
             items:
               - key: my.cnf
                 path: my.cnf
-        - name: init-scripts
-          configMap:
-            name: mysql-init-scripts
   volumeClaimTemplates:
     - metadata:
         name: data
