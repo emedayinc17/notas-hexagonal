@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: notas-hexagonal-dev
+  namespace: sga              # la Application vive en el ns sga (como quieres)
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/emedayinc17/notas-hexagonal.git
+    targetRevision: main
+    path: k8s/backend/overlays/dev
+    kustomize: {}            # 👈 forzamos que Argo use Kustomize en ese path
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sga           # todos los Deployments/Services/SS se crean en sga
+
+  syncPolicy:
+    syncOptions:
+      - PruneLast=true
+    # Si luego quieres auto-sync:
+    # automated:
+    #   prune: true
+    #   selfHeal: true

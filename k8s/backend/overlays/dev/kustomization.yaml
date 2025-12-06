@@ -1,16 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Namespace donde se desplegará todo
 namespace: sga
-
-# Incluir todos los recursos del backend definidos en base/
 resources:
   - ../../base
 
-# Puedes colocar aquí parches opcionales específicos para "dev"
-# patches:
-#   - path: patch-dev.yaml
-#     target:
-#       kind: Deployment
-#       name: iam-service
+# Si más adelante quieres sobreescribir imágenes/tags para dev:
+# images:
+#   - name: iam
+#     newName: emeday17/iam
+#     newTag: "1.0.0"
+#   ...
