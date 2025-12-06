@@ -5,50 +5,66 @@ metadata:
   namespace: sga
   annotations:
     kubernetes.io/ingress.class: nginx
+    # 👇 CORREGIDO: Rewrite para quitar el prefijo del path
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # 👇 Configuración CORS mejorada
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "$http_origin"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
-    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type, Accept, Origin, X-Requested-With"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    nginx.ingress.kubernetes.io/cors-expose-headers: "Content-Length,Content-Range"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
     nginx.ingress.kubernetes.io/limit-rps: "20"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/proxy-hide-headers: "Strict-Transport-Security"
-    # 👇 AÑADE ESTA ANOTACIÓN
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # 👇 IMPORTANTE: Para que Swagger funcione correctamente
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: ALLOWALL";
+      more_set_headers "Access-Control-Allow-Origin: $http_origin";
+      more_set_headers "Access-Control-Allow-Credentials: true";
 spec:
   ingressClassName: nginx
   rules:
-    - host: sga.emeday.inc
-      http:
-        paths:
-          # 👇 CAMBIA LOS PATHS para capturar la parte después de /iam
-          - path: /iam(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: iam-service
-                port:
-                  number: 8001
-
-          - path: /academico(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: academico-service
-                port:
-                  number: 8002
-
-          - path: /personas(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: personas-service
-                port:
-                  number: 8003
-
-          - path: /notas(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: notas-service
-                port:
-                  number: 8004
+  - host: sga.emeday.inc
+    http:
+      paths:
+      # 👇 PATTERN CORREGIDO: Captura todo después de /iam
+      - path: /iam(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: iam-service
+            port:
+              number: 8001
+        # 👇 Anotaciones específicas para esta ruta
+        annotations:
+          nginx.ingress.kubernetes.io/use-regex: "true"
+          
+      - path: /academico(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: academico-service
+            port:
+              number: 8002
+        annotations:
+          nginx.ingress.kubernetes.io/use-regex: "true"
+          
+      - path: /personas(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: personas-service
+            port:
+              number: 8003
+        annotations:
+          nginx.ingress.kubernetes.io/use-regex: "true"
+          
+      - path: /notas(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: notas-service
+            port:
+              number: 8004
+        annotations:
+          nginx.ingress.kubernetes.io/use-regex: "true"
