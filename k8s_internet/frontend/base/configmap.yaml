@@ -6,22 +6,21 @@ metadata:
   labels:
     app: sga-frontend
 data:
-  # URL base del backend vista desde el navegador (opcional, solo informativa)
-  FRONTEND_API_URL: "http://172.189.58.78"
+  # URL base del backend vista desde el navegador
+  FRONTEND_API_URL: "http://sga.172.189.58.78.nip.io"
 
   # Este config.js se monta como archivo estático en el contenedor
-  # y es el que usa tu JS (APP_CONFIG / API_CONFIG).
   config.js: |
     // ============================================
     // CONFIGURACIÓN DEL FRONTEND - ENTORNO K8S
     // ============================================
     window.APP_CONFIG = {
-      // URLs de los microservicios vía Ingress
+      // URLs de los microservicios vía Ingress (CON nip.io)
       API_ENDPOINTS: {
-        IAM_SERVICE:       'http://172.189.58.78/iam',
-        ACADEMICO_SERVICE: 'http://172.189.58.78/academico',
-        PERSONAS_SERVICE:  'http://172.189.58.78/personas',
-        NOTAS_SERVICE:     'http://172.189.58.78/notas'
+        IAM_SERVICE:       'http://sga.172.189.58.78.nip.io/iam',
+        ACADEMICO_SERVICE: 'http://sga.172.189.58.78.nip.io/academico',
+        PERSONAS_SERVICE:  'http://sga.172.189.58.78.nip.io/personas',
+        NOTAS_SERVICE:     'http://sga.172.189.58.78.nip.io/notas'
       },
 
       // Configuración de autenticación
@@ -35,7 +34,7 @@ data:
       APP: {
         NAME: 'Sistema de Gestión de Notas',
         VERSION: '1.0.0',
-        ENVIRONMENT: 'production' // 👈 ya no "development"
+        ENVIRONMENT: 'production'
       },
 
       // Configuración de UI

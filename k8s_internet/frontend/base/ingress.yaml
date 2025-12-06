@@ -9,12 +9,13 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - http:  # ¡Sin 'host:'! Esto acepta cualquier host/IP
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: sga-frontend
-                port:
-                  number: 80
+  - host: sga.172.189.58.78.nip.io  # 👈 Mismo host que el backend
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: sga-frontend
+              port:
+                number: 80
