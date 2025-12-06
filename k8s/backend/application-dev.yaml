@@ -10,7 +10,7 @@ spec:
   source:
     path: k8s/backend/overlays/dev
     repoURL: https://github.com/emedayinc17/notas-hexagonal.git
-    targetRevision: emeday
+    targetRevision: main
   project: default
   syncPolicy:
     automated:
