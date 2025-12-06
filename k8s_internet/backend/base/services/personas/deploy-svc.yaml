@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: personas-service
+  namespace: sga
+  labels:
+    app: personas-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: personas-service
+  template:
+    metadata:
+      labels:
+        app: personas-service
+    spec:
+      serviceAccountName: sga-serviceaccount
+      containers:
+        - name: personas
+          image: emeday17/personas:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8003
+          env:
+            - name: DB_HOST
+              value: "mysql.sga.svc.cluster.local"
+            - name: DB_PORT
+              value: "3306"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: personas-service
+  namespace: sga
+spec:
+  selector:
+    app: personas-service
+  ports:
+    - name: http
+      port: 8003
+      targetPort: 8003

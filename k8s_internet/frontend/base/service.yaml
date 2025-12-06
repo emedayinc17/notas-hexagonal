@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sga-frontend
+  namespace: sga
+  labels:
+    app: sga-frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: sga-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

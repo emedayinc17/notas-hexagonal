@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sga-frontend
+  namespace: sga
+  labels:
+    app: sga-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sga-frontend
+  template:
+    metadata:
+      labels:
+        app: sga-frontend
+    spec:
+      containers:
+        - name: sga-frontend
+          image: emeday17/frontend:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            # 👇 Montamos config.js exactamente donde lo pide el navegador: /js/config.js
+            - name: frontend-config-volume
+              mountPath: /usr/share/nginx/html/js/config.js
+              subPath: config.js
+          env:
+            - name: FRONTEND_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: frontend-config
+                  key: FRONTEND_API_URL
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: frontend-config-volume
+          configMap:
+            name: frontend-config
+            items:
+              - key: config.js
+                path: config.js

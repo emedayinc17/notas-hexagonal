@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: sga
+  labels:
+    app: sga-frontend
+data:
+  # URL base del backend vista desde el navegador (opcional, solo informativa)
+  FRONTEND_API_URL: "http://sga.emeday.inc"
+
+  # Este config.js se monta como archivo estático en el contenedor
+  # y es el que usa tu JS (APP_CONFIG / API_CONFIG).
+  config.js: |
+    // ============================================
+    // CONFIGURACIÓN DEL FRONTEND - ENTORNO K8S
+    // ============================================
+    window.APP_CONFIG = {
+      // URLs de los microservicios vía Ingress
+      API_ENDPOINTS: {
+        IAM_SERVICE:       'http://sga.emeday.inc/iam',
+        ACADEMICO_SERVICE: 'http://sga.emeday.inc/academico',
+        PERSONAS_SERVICE:  'http://sga.emeday.inc/personas',
+        NOTAS_SERVICE:     'http://sga.emeday.inc/notas'
+      },
+
+      // Configuración de autenticación
+      AUTH: {
+        TOKEN_KEY: 'sga_auth_token',
+        USER_KEY: 'sga_user_data',
+        TOKEN_EXPIRY_HOURS: 24
+      },
+
+      // Configuración general de la app
+      APP: {
+        NAME: 'Sistema de Gestión de Notas',
+        VERSION: '1.0.0',
+        ENVIRONMENT: 'production' // 👈 ya no "development"
+      },
+
+      // Configuración de UI
+      UI: {
+        ITEMS_PER_PAGE: 20,
+        MAX_ITEMS_PER_PAGE: 100,
+        TOAST_DURATION: 3000,
+        ALERT_DURATION: 5000
+      },
+
+      // Feature flags
+      FEATURES: {
+        ENABLE_REGISTRATION: true,
+        ENABLE_PASSWORD_RESET: false,
+        ENABLE_NOTIFICATIONS: true,
+        ENABLE_EXPORTS: true
+      },
+
+      // URLs externas
+      EXTERNAL: {
+        DOCS_URL: '/docs',
+        SUPPORT_URL: 'mailto:soporte@colegio.com',
+        HELP_URL: '/help'
+      }
+    };
+
+    // Validación mínima
+    (function validateConfig() {
+      const required = ['IAM_SERVICE', 'ACADEMICO_SERVICE', 'PERSONAS_SERVICE', 'NOTAS_SERVICE'];
+      const missing = required.filter(key => !window.APP_CONFIG.API_ENDPOINTS[key]);
+
+      if (missing.length > 0) {
+        console.error('⚠️ Configuración incompleta. Faltan:', missing);
+      } else {
+        console.log('✅ Configuración cargada correctamente');
+        console.log('   Ambiente:', window.APP_CONFIG.APP.ENVIRONMENT);
+        console.log('   Versión:', window.APP_CONFIG.APP.VERSION);
+      }
+    })();

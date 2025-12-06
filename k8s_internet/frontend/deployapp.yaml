@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sga-web
+spec:
+  destination:
+    name: ''
+    namespace: sga
+    server: https://kubernetes.default.svc
+  source:
+    path: k8s/frontend/overlays/prod
+    repoURL: https://github.com/emedayinc17/notas-hexagonal.git
+    targetRevision: main
+  sources: []
+  project: default
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
+    syncOptions:
+      - PruneLast=true

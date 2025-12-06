@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iam-service
+  namespace: sga
+  labels:
+    app: iam-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iam-service
+  template:
+    metadata:
+      labels:
+        app: iam-service
+    spec:
+      serviceAccountName: sga-serviceaccount
+      containers:
+        - name: iam
+          image: emeday17/iam:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8001
+          env:
+            # 🔹 Database
+            - name: DB_HOST
+              value: "mysql"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USER
+              value: "app_iam"
+            - name: DB_PASSWORD
+              value: "iam_pass_2025"
+            - name: DB_NAME
+              value: "sga_iam"
+
+            # 🔹 JWT
+            - name: JWT_SECRET_KEY
+              value: "mi-clave-secreta-super-segura-cambiar-en-produccion-123"
+            - name: JWT_ALGORITHM
+              value: "HS256"
+            - name: JWT_EXPIRATION_MINUTES
+              value: "1440"
+
+            # 🔹 App info
+            - name: APP_NAME
+              value: "IAM Service"
+            - name: APP_VERSION
+              value: "1.0.0"
+            - name: DEBUG
+              value: "False"   # en cluster mejor False
+
+            # 🔹 CORS
+            - name: CORS_ORIGINS
+              value: '["http://localhost:3000","http://localhost:8000","http://localhost:8080","http://127.0.0.1:8080","https://mh0djjbf-8080.use2.devtunnels.ms","http://localhost:8001"]'
+
+            # 🔹 Paginación (si tu config los usa)
+            - name: DEFAULT_PAGE_SIZE
+              value: "20"
+            - name: MAX_PAGE_SIZE
+              value: "100"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iam-service
+  namespace: sga
+spec:
+  selector:
+    app: iam-service
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8001

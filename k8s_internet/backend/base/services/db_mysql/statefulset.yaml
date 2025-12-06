@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  labels: { app: mysql }
+  annotations:
+    # Permite recrear SS si cambian campos inmutables (no borra PVC).
+    argocd.argoproj.io/sync-options: Replace=true
+spec:
+  serviceName: mysql-headless
+  replicas: 1
+  selector:
+    matchLabels: { app: mysql }
+  template:
+    metadata:
+      labels: { app: mysql }
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: mysql
+              containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-root-secret
+                  key: MYSQL_ROOT_PASSWORD
+          args: ["--default-authentication-plugin=mysql_native_password"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+            - name: mycnf
+              mountPath: /etc/mysql/conf.d
+          readinessProbe:
+            exec:
+              command: ["sh","-lc","mysqladmin ping -uroot -p$MYSQL_ROOT_PASSWORD"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["sh","-lc","mysqladmin ping -uroot -p$MYSQL_ROOT_PASSWORD"]
+            initialDelaySeconds: 40
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+      volumes:
+        - name: mycnf
+          configMap:
+            name: mysql-config
+            items:
+              - key: my.cnf
+                path: my.cnf
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: microk8s-hostpath
+        resources:
+          requests:
+            storage: 10Gi
