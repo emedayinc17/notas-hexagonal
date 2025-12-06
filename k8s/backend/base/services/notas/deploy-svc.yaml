@@ -22,9 +22,6 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8004
-          envFrom:
-            - secretRef:
-                name: sga-secrets
 
 ---
 
