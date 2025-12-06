@@ -13,4 +13,4 @@ patchesStrategicMerge:
         spec:
           containers:
             - name: sga-frontend
-              image: tu-registry/sga-frontend:prod
+              image: emeday17/frontend:latest

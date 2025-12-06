@@ -17,7 +17,7 @@ spec:
       containers:
         - name: sga-frontend
           # Replace image with your built frontend image (see Dockerfile.frontend)
-          image: tu-registry/sga-frontend:1.0.0
+          image: emeday17/frontend:latest
           ports:
             - containerPort: 80
           env:

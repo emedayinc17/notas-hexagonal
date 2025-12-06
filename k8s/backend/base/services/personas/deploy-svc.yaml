@@ -18,7 +18,7 @@ spec:
       serviceAccountName: sga-serviceaccount
       containers:
         - name: personas
-          image: tu-registry/personas-service:latest
+          image: emeday17/personas:latest
           ports:
             - containerPort: 8003
           envFrom:

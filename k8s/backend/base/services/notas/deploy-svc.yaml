@@ -18,7 +18,7 @@ spec:
       serviceAccountName: sga-serviceaccount
       containers:
         - name: notas
-          image: tu-registry/notas-service:latest
+          image: emeday17/notas:latest
           ports:
             - containerPort: 8004
           envFrom:

@@ -33,7 +33,7 @@ spec:
       serviceAccountName: sga-serviceaccount
       containers:
         - name: iam
-          image: tu-registry/iam-service:latest
+          image: emeday17/iam:latest
           command: ["/bin/sh"]
           args:
             - "-c"
