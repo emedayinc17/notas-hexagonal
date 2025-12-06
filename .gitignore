@@ -69,3 +69,5 @@ dmypy.json
 *.bak
 *.tmp
 .cache/
+
+hashicorp.txt
