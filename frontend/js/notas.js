@@ -240,6 +240,11 @@ async function initializeDocenteView() {
                     <i class="bi bi-clipboard-data me-2"></i>Gestionar Notas
                 </h2>
                 <p class="text-muted">Lista de alumnos para gestionar calificaciones por clase y curso</p>
+                <div class="ms-auto">
+                    <button id="btnExportarExcel" class="btn btn-success btn-sm" onclick="exportDocenteExcel()">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel
+                    </button>
+                </div>
             </div>
 
             <!-- Filters Card -->
@@ -315,7 +320,22 @@ async function initializeDocenteView() {
  */
 async function cargarDatosIniciales() {
     try {
-        // Cargar datos en paralelo
+        // Cargar datos en paralelo (usar allSettled para no fallar por endpoints opcionales/403)
+        const promises = [
+            AcademicoService.listCursos(),
+            AcademicoService.listSecciones(),
+            AcademicoService.listGrados(),
+            AcademicoService.listPeriodos(),
+            PersonasService.listMatriculas(),
+            PersonasService.listAlumnos(),
+            NotasService.listTiposEvaluacion(),
+            NotasService.listEscalas(),
+            AcademicoService.getDocentesActivos()
+        ];
+
+        const settled = await Promise.allSettled(promises);
+        const results = settled.map(r => (r.status === 'fulfilled' ? r.value : null));
+
         const [
             resultCursos,
             resultSecciones,
@@ -326,17 +346,7 @@ async function cargarDatosIniciales() {
             resultTiposEval,
             resultEscalas,
             resultDocentes
-        ] = await Promise.all([
-            AcademicoService.listCursos(),
-            AcademicoService.listSecciones(),
-            AcademicoService.listGrados(),
-            AcademicoService.listPeriodos(),
-            PersonasService.listMatriculas(),
-            PersonasService.listAlumnos(),
-            NotasService.listTiposEvaluacion(),
-            NotasService.listEscalas(),
-            AcademicoService.getDocentesActivos()
-        ]);
+        ] = results;
 
         // Asignar datos - extraer los arrays de la estructura {data: Array, total: number}
         cursos = resultCursos.success ? (resultCursos.data.cursos || resultCursos.data || []) : [];
@@ -2745,6 +2755,258 @@ function filtrarDatos() {
         cargarNotasDocente();
     }
 }
+
+/* ---------------- Exportar a Excel (Docente) ---------------- */
+
+function loadSheetJS() {
+    return new Promise((resolve, reject) => {
+        if (window.XLSX) return resolve(window.XLSX);
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js';
+        s.onload = () => resolve(window.XLSX);
+        s.onerror = (e) => reject(new Error('No se pudo cargar SheetJS: ' + e));
+        document.head.appendChild(s);
+    });
+}
+
+function getFilteredAlumnosForExport() {
+    const filtroClase = document.getElementById('filtroClase')?.value;
+    const filtroGrado = document.getElementById('filtroGradoDocente')?.value;
+    const filtroSeccion = document.getElementById('filtroSeccionDocente')?.value;
+    const terminoBusqueda = (document.getElementById('buscarAlumno')?.value || '').toLowerCase();
+
+    let resultados = (alumnosAsignados || []);
+
+    if (filtroClase) resultados = resultados.filter(a => a.clases_ids.includes(filtroClase));
+
+    if (filtroGrado) {
+        resultados = resultados.filter(a => {
+            return a.cursos.some(c => {
+                const seccion = secciones.find(s => s.id === c.seccion_id);
+                return seccion && String(seccion.grado_id) === String(filtroGrado);
+            });
+        });
+    }
+
+    if (filtroSeccion) resultados = resultados.filter(a => a.cursos.some(c => String(c.seccion_id) === String(filtroSeccion)));
+
+    if (terminoBusqueda) {
+        resultados = resultados.filter(a =>
+            (a.nombres && a.nombres.toLowerCase().includes(terminoBusqueda)) ||
+            (a.apellidos && a.apellidos.toLowerCase().includes(terminoBusqueda)) ||
+            (a.numero_documento && a.numero_documento.toLowerCase().includes(terminoBusqueda))
+        );
+    }
+
+    return resultados;
+}
+
+async function fetchNotasForAlumnos(alumnosList) {
+    // Intentar usar endpoint bulk si existe en NotasService
+    const bulkCandidates = ['getNotasPorAlumnos', 'getNotasPorAlumnosBulk', 'getNotasBulk', 'getNotasForStudents', 'listNotasForAlumnos'];
+    const bulkFnName = bulkCandidates.find(n => typeof NotasService[n] === 'function');
+    if (bulkFnName) {
+        try {
+            const ids = alumnosList.map(a => a.id);
+            const bulkRes = await NotasService[bulkFnName](ids);
+            if (bulkRes && bulkRes.success && bulkRes.data) {
+                // Esperamos un objeto { alumnoId: [notas] } o un array con entries
+                const map = bulkRes.data;
+                const out = alumnosList.map(alumno => {
+                    const notas = map[alumno.id] || (Array.isArray(map) ? (map.find(x => String(x.alumno_id) === String(alumno.id))?.notas || []) : []);
+                    // Cachear resultado por alumno
+                    try { sessionStorage.setItem(`notas_alumno_${alumno.id}`, JSON.stringify({ ts: Date.now(), data: Array.isArray(notas) ? notas : [] })); } catch (e) { }
+                    return { alumno, notas: Array.isArray(notas) ? notas : [] };
+                });
+                return out;
+            }
+        } catch (e) {
+            console.warn('Bulk fetch notas failed, falling back to per-alumno fetch:', e.message || e);
+        }
+    }
+
+    // Fallback: fetch por alumno con concurrencia limitada
+    const out = [];
+    const concurrency = ALUMNOS_CONCURRENCY || 8;
+    for (let i = 0; i < alumnosList.length; i += concurrency) {
+        const batch = alumnosList.slice(i, i + concurrency);
+        const promises = batch.map(async alumno => {
+            try {
+                const res = await NotasService.getNotasAlumno(alumno.id, 0, 100);
+                const notas = (res && res.success) ? (res.data.notas || []) : [];
+                try { sessionStorage.setItem(`notas_alumno_${alumno.id}`, JSON.stringify({ ts: Date.now(), data: notas })); } catch (e) { }
+                return { alumno, notas };
+            } catch (e) {
+                console.warn('Error obteniendo notas para alumno', alumno.id, e);
+                return { alumno, notas: [] };
+            }
+        });
+        // eslint-disable-next-line no-await-in-loop
+        const results = await Promise.all(promises);
+        out.push(...results);
+    }
+    return out;
+}
+
+async function exportDocenteExcel() {
+    try {
+        showLoading('Preparando exportación...');
+        const alumnosToExport = getFilteredAlumnosForExport();
+        if (!alumnosToExport || alumnosToExport.length === 0) {
+            hideLoading();
+            showToast('No hay alumnos para exportar con los filtros actuales.', 'info');
+            return;
+        }
+
+        // Revisar si tenemos notas cacheadas en sessionStorage para cada alumno
+        const alumnosSinCache = alumnosToExport.filter(a => !sessionStorage.getItem(`notas_alumno_${a.id}`));
+
+        // Si hay alumnos sin cache, preguntar al usuario si quiere realizar la exportación completa (más lenta)
+        let alumnosConNotas = null;
+        const useFullFetch = alumnosSinCache.length === 0 ? false : confirm(`Hay ${alumnosSinCache.length} alumno(s) sin notas cacheadas.\nPulsa Aceptar para realizar una exportación completa (puede demorar), o Cancelar para exportar sólo con los datos ya listados (rápido).`);
+
+        await loadSheetJS();
+
+        if (useFullFetch) {
+            // Intentar usar endpoint server-side de exportación si está disponible (más rápido)
+            try {
+                const params = new URLSearchParams();
+                const gradoId = document.getElementById('filtroGradoDocente')?.value;
+                const seccionId = document.getElementById('filtroSeccionDocente')?.value;
+                const claseFiltro = document.getElementById('filtroClase')?.value;
+                const periodoId = document.getElementById('filtroPeriodo')?.value;
+                if (gradoId) params.append('grado_id', gradoId);
+                if (seccionId) params.append('seccion_id', seccionId);
+                if (claseFiltro) params.append('clase_id', claseFiltro);
+                if (periodoId) params.append('periodo_id', periodoId);
+
+                const url = `${API_CONFIG.NOTAS_SERVICE}/v1/notas/export?${params.toString()}`;
+                const resp = await fetch(url, { headers: getAuthHeaders() });
+                if (resp.ok) {
+                    const blob = await resp.blob();
+                    const contentDisposition = resp.headers.get('Content-Disposition');
+                    let filename = 'notas_export.csv';
+                    if (contentDisposition) {
+                        const m = /filename="?([^";]+)"?/.exec(contentDisposition);
+                        if (m) filename = m[1];
+                    }
+                    const urlBlob = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = urlBlob;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(urlBlob);
+                    hideLoading();
+                    showToast('Exportación completada: ' + filename, 'success');
+                    return;
+                }
+            } catch (e) {
+                console.warn('Server-side export failed, falling back to client fetch:', e);
+            }
+
+            // Fallback: ejecutar fetch (bulk o por alumno)
+            alumnosConNotas = await fetchNotasForAlumnos(alumnosToExport);
+        } else {
+            // Usar sólo notas cacheadas si existen; no hacer llamadas adicionales
+            alumnosConNotas = alumnosToExport.map(alumno => {
+                let cached = null;
+                try { cached = JSON.parse(sessionStorage.getItem(`notas_alumno_${alumno.id}`)); } catch (e) { cached = null; }
+                const notas = (cached && Array.isArray(cached.data)) ? cached.data : [];
+                return { alumno, notas };
+            });
+        }
+
+        // Preparar estructura de filas: una fila por alumno-curso
+        const rows = [];
+        let maxCols = 0;
+        const filas = [];
+
+        for (const entry of alumnosConNotas) {
+            const alumno = entry.alumno;
+            const notas = entry.notas || [];
+
+            const mapCurso = new Map();
+            notas.forEach((n, idx) => {
+                const cid = n.curso_id || n.clase_id || n.claseId || n.cursoId || 'unknown';
+                if (!mapCurso.has(cid)) mapCurso.set(cid, []);
+                mapCurso.get(cid).push(n);
+            });
+
+            const cursosList = alumno.cursos && alumno.cursos.length ? alumno.cursos : [{ curso_id: 'unknown', curso_nombre: (alumno.curso_nombre || '') }];
+
+            for (const c of cursosList) {
+                const cid = c.curso_id || c.clase_id || c.id || 'unknown';
+                const notasCurso = mapCurso.get(cid) || [];
+
+                const colsMap = new Map();
+                notasCurso.forEach((n, idx) => {
+                    const col = (n.columna_nota) ? String(n.columna_nota).toUpperCase() : `N${idx+1}`;
+                    colsMap.set(col, n.valor_numerico != null ? n.valor_numerico : (n.valor_literal != null ? n.valor_literal : ''));
+                });
+
+                const colKeys = Array.from(colsMap.keys()).sort();
+                if (colKeys.length > maxCols) maxCols = colKeys.length;
+
+                filas.push({ alumno, curso: c, colsMap });
+            }
+        }
+
+        const header = ['Grado', 'Sección', 'Alumno', 'Documento', 'Curso', 'Docente', 'Periodo', 'Promedio'];
+        for (let i = 1; i <= Math.max(maxCols, 4); i++) header.push(`N${i}`);
+        rows.push(header);
+
+        for (const f of filas) {
+            const alumno = f.alumno;
+            const curso = f.curso || {};
+            const colsMap = f.colsMap || new Map();
+
+            const valores = Array.from(colsMap.values()).map(v => parseFloat(v)).filter(v => !isNaN(v));
+            const promedio = valores.length ? (valores.reduce((a,b)=>a+b,0)/valores.length).toFixed(2) : '-';
+
+            const gradoTexto = alumno.grado_nombre || alumno.grado || '';
+            const seccionTexto = alumno.seccion_nombre || alumno.seccion || '';
+            const nombreAlumno = `${alumno.apellidos || ''}, ${alumno.nombres || ''}`.trim();
+            const doc = alumno.numero_documento || '';
+            const docente = alumno.docente_nombre || '';
+            const periodo = alumno.periodo_nombre || '';
+
+            const row = [gradoTexto, seccionTexto, nombreAlumno, doc, curso.curso_nombre || curso.nombre || '', docente, periodo, promedio];
+            for (let i = 1; i <= Math.max(maxCols, 4); i++) {
+                const key = `N${i}`;
+                const val = colsMap.has(key) ? colsMap.get(key) : '';
+                row.push((val != null) ? val : '');
+            }
+            rows.push(row);
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Notas');
+
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const now = new Date();
+        const filename = `notas_export_${now.toISOString().slice(0,10)}.xlsx`;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
+        hideLoading();
+        showToast('Exportación completada: ' + filename, 'success');
+    } catch (e) {
+        hideLoading();
+        console.error('Error exportando a Excel:', e);
+        showToast('Error exportando: ' + (e.message || e), 'danger');
+    }
+}
+
 
 /**
  * Manejar cambio de grado (solo admin)

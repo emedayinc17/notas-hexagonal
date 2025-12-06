@@ -4,7 +4,7 @@
 FROM nginx:alpine
 
 # Metadata
-LABEL maintainer="tu-email@colegio.com"
+LABEL maintainer="emeday@colegio.com"
 LABEL description="Frontend del Sistema de Gestión de Notas"
 LABEL version="1.0.0"
 

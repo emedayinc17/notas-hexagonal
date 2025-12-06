@@ -544,6 +544,137 @@ async def list_notas(
         )
 
 
+@router.get("/notas/export")
+async def export_notas_csv(
+    grado_id: Optional[str] = Query(None),
+    seccion_id: Optional[str] = Query(None),
+    curso_id: Optional[str] = Query(None),
+    periodo_id: Optional[str] = Query(None),
+    format: str = Query('csv', regex='^(csv|xlsx)$'),
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+    settings = Depends(get_settings),
+):
+    """Exportar notas como CSV o XLSX - consulta optimizada con JOINs y streaming.
+    - DOCENTE solo exporta sus clases (filtrado por clases.docente_user_id)
+    - ADMIN puede exportar todo o filtrar por grado/seccion/curso/periodo
+    - Query param `format` acepta 'csv' (default) or 'xlsx'
+    """
+    try:
+        token = extract_bearer_token(authorization)
+        payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        user_id, rol = _extract_user_and_role(payload)
+
+        from sqlalchemy import text
+
+        # Base SQL con joins para enriquecer en una sola consulta
+        sql = """
+        SELECT
+            g.id AS grado_id, g.nombre AS grado_nombre,
+            s.id AS seccion_id, s.nombre AS seccion_nombre,
+            a.id AS alumno_id, a.nombres AS alumno_nombres, a.apellido_paterno AS alumno_apellidos, a.numero_documento,
+            c.id AS curso_id, c.nombre AS curso_nombre,
+            cl.id AS clase_id,
+            n.matricula_clase_id, n.columna_nota, n.valor_numerico, n.valor_literal, n.periodo_id, n.created_at
+        FROM sga_notas.notas n
+        JOIN sga_personas.matriculas_clase m ON n.matricula_clase_id = m.id
+        JOIN sga_personas.alumnos a ON m.alumno_id = a.id
+        JOIN sga_academico.clases cl ON m.clase_id = cl.id
+        JOIN sga_academico.cursos c ON cl.curso_id = c.id
+        JOIN sga_academico.secciones s ON cl.seccion_id = s.id
+        JOIN sga_academico.grados g ON s.grado_id = g.id
+        WHERE n.is_deleted = FALSE
+        """
+
+        params = {}
+
+        # Rol-based restriction: si es DOCENTE, filtrar por su user_id en clases
+        if rol == 'DOCENTE':
+            sql += " AND cl.docente_user_id = :docente_user_id"
+            params['docente_user_id'] = user_id
+
+        # Aplicar filtros opcionales
+        if grado_id:
+            sql += " AND g.id = :grado_id"
+            params['grado_id'] = grado_id
+        if seccion_id:
+            sql += " AND s.id = :seccion_id"
+            params['seccion_id'] = seccion_id
+        if curso_id:
+            sql += " AND c.id = :curso_id"
+            params['curso_id'] = curso_id
+        if periodo_id:
+            sql += " AND n.periodo_id = :periodo_id"
+            params['periodo_id'] = periodo_id
+
+        sql += " ORDER BY g.nombre, s.nombre, a.apellido_paterno, a.nombres, c.nombre, n.created_at"
+
+        # Ejecutar la consulta en modo streaming
+        conn = db.connection().execution_options(stream_results=True)
+        result = conn.execute(text(sql), params)
+
+        from fastapi.responses import StreamingResponse
+        import csv
+        import io
+
+        # CSV export (default)
+        if format == 'csv':
+            def row_generator():
+                # Cabecera
+                header = ['grado_id','grado_nombre','seccion_id','seccion_nombre','alumno_id','alumno_apellidos','alumno_nombres','numero_documento','curso_id','curso_nombre','clase_id','matricula_clase_id','columna_nota','valor_numerico','valor_literal','periodo_id','created_at']
+                output = io.StringIO()
+                writer = csv.writer(output)
+                writer.writerow(header)
+                yield output.getvalue()
+                output.seek(0)
+                output.truncate(0)
+
+                for row in result:
+                    try:
+                        writer.writerow([row['grado_id'], row['grado_nombre'], row['seccion_id'], row['seccion_nombre'], row['alumno_id'], row['alumno_apellidos'], row['alumno_nombres'], row['numero_documento'], row['curso_id'], row['curso_nombre'], row['clase_id'], row['matricula_clase_id'], row['columna_nota'], row['valor_numerico'], row['valor_literal'], row['periodo_id'], row['created_at'].isoformat() if row['created_at'] else ''])
+                        yield output.getvalue()
+                        output.seek(0)
+                        output.truncate(0)
+                    except Exception:
+                        # no bloquear por fila con problema
+                        continue
+
+            filename = f"notas_export_{rol.lower()}_{(grado_id or 'all')}.csv"
+            headers = {"Content-Disposition": f"attachment; filename=\"{filename}\""}
+            return StreamingResponse(row_generator(), media_type='text/csv', headers=headers)
+
+        # XLSX export using openpyxl
+        else:
+            try:
+                from openpyxl import Workbook
+            except Exception:
+                return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": "MissingDependency", "message": "openpyxl is required for xlsx export"})
+
+            wb = Workbook(write_only=True)
+            ws = wb.create_sheet()
+            header = ['grado_id','grado_nombre','seccion_id','seccion_nombre','alumno_id','alumno_apellidos','alumno_nombres','numero_documento','curso_id','curso_nombre','clase_id','matricula_clase_id','columna_nota','valor_numerico','valor_literal','periodo_id','created_at']
+            ws.append(header)
+
+            for row in result:
+                try:
+                    ws.append([row['grado_id'], row['grado_nombre'], row['seccion_id'], row['seccion_nombre'], row['alumno_id'], row['alumno_apellidos'], row['alumno_nombres'], row['numero_documento'], row['curso_id'], row['curso_nombre'], row['clase_id'], row['matricula_clase_id'], row['columna_nota'], row['valor_numerico'], row['valor_literal'], row['periodo_id'], row['created_at'].isoformat() if row['created_at'] else ''])
+                except Exception:
+                    continue
+
+            bio = io.BytesIO()
+            wb.save(bio)
+            bio.seek(0)
+
+            filename = f"notas_export_{rol.lower()}_{(grado_id or 'all')}.xlsx"
+            headers = {"Content-Disposition": f"attachment; filename=\"{filename}\""}
+            return StreamingResponse(iter([bio.getvalue()]), media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers=headers)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": "INTERNAL_ERROR", "message": str(e)})
+
+
 @router.get("/alertas")
 async def list_alertas(
     padre_id: Optional[str] = Query(None),
