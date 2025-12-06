@@ -33,7 +33,9 @@ foreach ($svc in $services) {
     $serviceName = $svc['name']
     # Use $() to avoid PowerShell parsing issues with ':' after variable names
     $img = "$Registry/$($serviceName):$($Tag)"
-    $context = Join-Path -Path (Get-Location) -ChildPath $svc.path
+    # Use repo root as build context so Dockerfiles can COPY shared/ and service folders
+    $repoRoot = (Get-Location)
+    $context = $repoRoot
 
     if (-not (Test-Path $context)){
         Write-Host "[warn] Context path for $($svc.name) not found: $context" -ForegroundColor Yellow
@@ -46,7 +48,8 @@ foreach ($svc in $services) {
         # Try default docker build context if no Dockerfile present
         $buildArgs = "-t $img $context"
     } else {
-        $buildArgs = "-f `"$dockerfilePath`" -t $img $context"
+        # Pass the service path as a build-arg so Dockerfile can COPY the correct service files
+        $buildArgs = "-f `"$dockerfilePath`" --build-arg SERVICE_DIR=`"$($svc.path)`" -t $img $context"
     }
 
     Write-Info "Building $($svc.name) -> $img"
