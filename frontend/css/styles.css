@@ -898,3 +898,16 @@ td[data-curso-id] span:last-child {
     background: white !important;
     border: 1px solid #dee2e6 !important;
 }
+
+/* Mejor contraste para el Promedio General y nombre de usuario en cabecera */
+.promedio-general {
+    background: var(--success-color) !important;
+    color: white !important;
+    padding: 0.5rem !important;
+    border-radius: 6px;
+}
+
+.navbar-custom .user-info .fw-bold {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}

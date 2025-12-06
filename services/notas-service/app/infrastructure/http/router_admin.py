@@ -6,9 +6,31 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from shared.common import DomainException, extract_bearer_token, decode_jwt_token, AuditHelper, AccionAuditoria
 from app.infrastructure.http.dependencies import *
+import asyncio
 
 
 router = APIRouter(prefix="/v1", tags=["notas"])
+
+
+def _extract_user_and_role(payload: dict):
+    """Extrae user_id y rol de un payload JWT con nombres de claim alternativos."""
+    user_id = payload.get('user_id') or payload.get('sub')
+    rol = (payload.get('rol_nombre') or payload.get('rol') or payload.get('role') or '')
+    if isinstance(rol, str):
+        rol = rol.upper()
+    return user_id, rol
+
+
+def _log_http_response(label: str, resp, url: str = None):
+    try:
+        text = None
+        try:
+            text = resp.text
+        except Exception:
+            text = '<no-text>'
+        print(f"[DEBUG HTTP] {label} url={url or ''} status={getattr(resp, 'status_code', None)} body={str(text)[:400]}")
+    except Exception as e:
+        print(f"[DEBUG HTTP] Error logging http response: {e}")
 
 
 # Request Models
@@ -21,6 +43,12 @@ class RegistrarNotaRequest(BaseModel):
     valor_numerico: Optional[float] = None
     peso: Optional[float] = None
     observaciones: Optional[str] = None
+    columna_nota: Optional[str] = "N1"
+
+
+class RegistrarNotasBatchRequest(BaseModel):
+    notas: list[RegistrarNotaRequest]
+    idempotency_key: Optional[str] = None
 
 
 class UpdateNotaRequest(BaseModel):
@@ -75,8 +103,7 @@ async def registrar_nota(
         
         token = extract_bearer_token(authorization)
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
-        user_id = payload.get("sub")
-        rol = payload.get("rol")
+        user_id, rol = _extract_user_and_role(payload)
         
         if rol not in ["DOCENTE", "ADMIN"]:
             return JSONResponse(
@@ -89,9 +116,10 @@ async def registrar_nota(
             async with httpx.AsyncClient() as client:
                 # Obtener la matrícula para saber a qué clase pertenece
                 mat_response = await client.get(
-                    f"{settings.PERSONAS_SERVICE_URL}/v1/admin/matriculas/{request.matricula_clase_id}",
+                    f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas/{request.matricula_clase_id}",
                     headers={"Authorization": f"Bearer {token}"}
                 )
+                _log_http_response("registrar_nota.get_matricula", mat_response, f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas/{request.matricula_clase_id}")
                 if mat_response.status_code != 200:
                     return JSONResponse(
                         status_code=status.HTTP_404_NOT_FOUND,
@@ -103,9 +131,10 @@ async def registrar_nota(
                 
                 # Verificar que el docente tiene asignada esa clase
                 clases_response = await client.get(
-                    f"{settings.ACADEMICO_SERVICE_URL}/v1/admin/clases?docente_id={user_id}&limit=100",
+                    f"{settings.ACADEMICO_SERVICE_URL}/v1/docente/clases?limit=100",
                     headers={"Authorization": f"Bearer {token}"}
                 )
+                _log_http_response("registrar_nota.get_clases_docente", clases_response, f"{settings.ACADEMICO_SERVICE_URL}/v1/docente/clases?limit=100")
                 if clases_response.status_code != 200:
                     return JSONResponse(
                         status_code=status.HTTP_403_FORBIDDEN,
@@ -132,6 +161,7 @@ async def registrar_nota(
             valor_numerico=request.valor_numerico,
             peso=request.peso,
             observaciones=request.observaciones,
+            columna_nota=request.columna_nota,
             auth_token=token  # Token para llamadas HTTP a otros servicios
         )
         
@@ -144,6 +174,153 @@ async def registrar_nota(
         )
 
 
+@router.post("/notas/batch")
+async def registrar_notas_batch(
+    request: RegistrarNotasBatchRequest,
+    authorization: Optional[str] = Header(None),
+    use_case = Depends(get_registrar_nota_use_case),
+    settings = Depends(get_settings),
+):
+    """Registrar un lote de notas por parte de un docente.
+    Devuelve resultado por item sin detener el procesamiento ante errores parciales.
+    """
+    try:
+        import httpx
+
+        token = extract_bearer_token(authorization)
+        payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        user_id, rol = _extract_user_and_role(payload)
+
+        if rol not in ["DOCENTE", "ADMIN"]:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"error": "Forbidden", "message": "Solo DOCENTE o ADMIN pueden registrar notas"}
+            )
+
+        # Obtener clases del docente (para verificar pertenencia)
+        clase_ids_docente = []
+        if rol == "DOCENTE":
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"{settings.ACADEMICO_SERVICE_URL}/v1/docente/clases?limit=100", headers={"Authorization": f"Bearer {token}"})
+                _log_http_response("registrar_notas_batch.get_clases_docente", resp, f"{settings.ACADEMICO_SERVICE_URL}/v1/docente/clases?limit=100")
+                if resp.status_code == 200:
+                    clase_ids_docente = [c.get("id") for c in resp.json().get("clases", [])]
+                else:
+                    return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"error": "Forbidden", "message": "No se pudieron obtener las clases del docente"})
+
+        results = []
+        
+        # 1. Identificar matrículas únicas para consultar en paralelo
+        unique_matricula_ids = list(set(n.matricula_clase_id for n in request.notas))
+        matriculas_map = {} # matricula_id -> { clase_id: ... }
+
+        # 2. Consultar matrículas en paralelo
+        async with httpx.AsyncClient() as client:
+            # Función auxiliar para fetch
+            async def fetch_matricula(mid):
+                try:
+                    resp = await client.get(
+                        f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas/{mid}", 
+                        headers={"Authorization": f"Bearer {token}"}
+                    )
+                    if resp.status_code == 200:
+                        return mid, resp.json()
+                except Exception as e:
+                    print(f"Error fetching matricula {mid}: {e}")
+                return mid, None
+
+            # Ejecutar consultas
+            tasks = [fetch_matricula(mid) for mid in unique_matricula_ids]
+            responses = await asyncio.gather(*tasks)
+            
+            for mid, data in responses:
+                if data:
+                    matriculas_map[mid] = data
+
+        # 3. Consultar Umbrales en paralelo (Optimización)
+        unique_escala_ids = list(set(n.escala_id for n in request.notas if n.escala_id))
+        umbrales_map = {}
+        
+        if unique_escala_ids:
+            async with httpx.AsyncClient() as client:
+                async def fetch_umbral(eid):
+                    try:
+                        resp = await client.get(
+                            f"{settings.ACADEMICO_SERVICE_URL}/v1/escalas/{eid}/umbral", # Asumiendo endpoint, si no existe el use case lo maneja
+                            headers={"Authorization": f"Bearer {token}"}
+                        )
+                        # Nota: El cliente academico usa get_umbral_alerta que llama a /v1/configuracion/umbral-alerta?escala_id=...
+                        # Vamos a replicar la logica del cliente para ser consistentes o usar el cliente si es posible.
+                        # Dado que no tenemos el cliente instanciado aqui facilmente (esta en use_case), hacemos la llamada directa.
+                        # Mejor aun: instanciamos el cliente o hacemos la llamada HTTP raw correcta.
+                        # Endpoint real usado en AcademicoServiceClient: /v1/configuracion/umbral-alerta
+                        resp = await client.get(
+                            f"{settings.ACADEMICO_SERVICE_URL}/v1/configuracion/umbral-alerta",
+                            params={"escala_id": eid},
+                            headers={"Authorization": f"Bearer {token}"}
+                        )
+                        if resp.status_code == 200:
+                            return eid, resp.json()
+                    except Exception:
+                        pass
+                    return eid, None
+
+                tasks_umbral = [fetch_umbral(eid) for eid in unique_escala_ids]
+                responses_umbral = await asyncio.gather(*tasks_umbral)
+                for eid, data in responses_umbral:
+                    if data:
+                        umbrales_map[eid] = data
+
+        # 4. Procesar notas en paralelo
+        async def process_single_note(n):
+            try:
+                # Verificar matricula
+                mdata = matriculas_map.get(n.matricula_clase_id)
+                if not mdata:
+                    return {"matricula_clase_id": n.matricula_clase_id, "status": "error", "message": "Matrícula no encontrada (o error de conexión)"}
+                
+                clase_id = mdata.get("clase_id")
+
+                # Verificar pertenencia del docente a la clase (si es docente)
+                if rol == "DOCENTE" and clase_id not in clase_ids_docente:
+                    return {"matricula_clase_id": n.matricula_clase_id, "status": "error", "message": "Sin permiso para registrar nota en esta clase"}
+
+                # Llamar al caso de uso existente (ahora optimizado con cache)
+                out = await use_case.execute(
+                    matricula_clase_id=n.matricula_clase_id,
+                    tipo_evaluacion_id=n.tipo_evaluacion_id,
+                    periodo_id=n.periodo_id,
+                    escala_id=n.escala_id,
+                    registrado_por_user_id=user_id,
+                    valor_literal=n.valor_literal,
+                    valor_numerico=n.valor_numerico,
+                    peso=n.peso,
+                    observaciones=n.observaciones,
+                    columna_nota=n.columna_nota,
+                    auth_token=token,
+                    matricula_info_cache=mdata,
+                    umbral_cache=umbrales_map.get(n.escala_id)
+                )
+                nota_id = out.get("nota", {}).get("id")
+                return {"matricula_clase_id": n.matricula_clase_id, "status": "ok", "nota_id": nota_id}
+
+            except DomainException as de:
+                return {"matricula_clase_id": n.matricula_clase_id, "status": "error", "message": de.message}
+            except Exception as e:
+                return {"matricula_clase_id": n.matricula_clase_id, "status": "error", "message": str(e)}
+
+        # Ejecutar todas las notas en paralelo
+        # Usamos return_exceptions=False porque manejamos excepciones dentro de process_single_note
+        results = await asyncio.gather(*[process_single_note(n) for n in request.notas])
+
+        return {"results": results}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": "INTERNAL_ERROR", "message": str(e)})
+
+
 @router.get("/notas")
 async def list_notas(
     alumno_id: Optional[str] = Query(None),
@@ -151,7 +328,7 @@ async def list_notas(
     periodo_id: Optional[str] = Query(None),
     tipo_evaluacion_id: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(1000, ge=1, le=1000),
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(None),
     settings = Depends(get_settings),
@@ -160,8 +337,7 @@ async def list_notas(
     try:
         token = extract_bearer_token(authorization)
         payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
-        user_id = payload.get("sub")
-        rol = payload.get("rol")
+        user_id, rol = _extract_user_and_role(payload)
         
         from app.infrastructure.db.repositories import SqlAlchemyNotaRepository
         from app.infrastructure.db.models import NotaModel
@@ -175,37 +351,39 @@ async def list_notas(
         
         # PADRE: Solo puede ver notas de sus hijos
         if rol == "PADRE":
-            # Obtener IDs de hijos del padre
+            # Obtener IDs de hijos del padre usando el endpoint de relaciones
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{settings.PERSONAS_SERVICE_URL}/v1/admin/alumnos?padre_id={user_id}&limit=100",
+                    f"{settings.PERSONAS_SERVICE_URL}/v1/relaciones/padre/{user_id}",
                     headers={"Authorization": f"Bearer {token}"}
                 )
+                _log_http_response("list_notas.padre.get_hijos", response, f"{settings.PERSONAS_SERVICE_URL}/v1/relaciones/padre/{user_id}")
                 if response.status_code != 200:
                     return JSONResponse(
                         status_code=status.HTTP_403_FORBIDDEN,
                         content={"error": "Forbidden", "message": "No se pudieron obtener los hijos del padre"}
                     )
-                alumnos_data = response.json()
-                hijo_ids = [a["id"] for a in alumnos_data.get("alumnos", [])]
-                
+                hijos_data = response.json()
+                hijo_ids = [h.get("alumno_id") for h in hijos_data.get("hijos", [])]
+
                 if not hijo_ids:
                     return {"notas": [], "total": 0}
-                
+
                 # Obtener matrículas de los hijos
                 matriculas_ids = []
                 for hijo_id in hijo_ids:
                     mat_response = await client.get(
-                        f"{settings.PERSONAS_SERVICE_URL}/v1/admin/matriculas?alumno_id={hijo_id}&limit=100",
+                        f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas?alumno_id={hijo_id}&limit=100",
                         headers={"Authorization": f"Bearer {token}"}
                     )
+                    _log_http_response("list_notas.padre.get_matriculas_hijo", mat_response, f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas?alumno_id={hijo_id}&limit=100")
                     if mat_response.status_code == 200:
                         mats = mat_response.json().get("matriculas", [])
                         matriculas_ids.extend([m["id"] for m in mats])
-                
+
                 if not matriculas_ids:
                     return {"notas": [], "total": 0}
-                
+
                 query = query.filter(NotaModel.matricula_clase_id.in_(matriculas_ids))
         
         # DOCENTE: Solo puede ver notas de sus clases asignadas
@@ -213,9 +391,10 @@ async def list_notas(
             # Obtener clases del docente
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{settings.ACADEMICO_SERVICE_URL}/v1/admin/clases?docente_id={user_id}&limit=100",
+                    f"{settings.ACADEMICO_SERVICE_URL}/v1/docente/clases?limit=100",
                     headers={"Authorization": f"Bearer {token}"}
                 )
+                _log_http_response("list_notas.docente.get_clases", response, f"{settings.ACADEMICO_SERVICE_URL}/v1/docente/clases?limit=100")
                 if response.status_code != 200:
                     return JSONResponse(
                         status_code=status.HTTP_403_FORBIDDEN,
@@ -231,9 +410,10 @@ async def list_notas(
                 matriculas_ids = []
                 for cid in clase_ids:
                     mat_response = await client.get(
-                        f"{settings.PERSONAS_SERVICE_URL}/v1/admin/matriculas?clase_id={cid}&limit=100",
+                        f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas?clase_id={cid}&limit=100",
                         headers={"Authorization": f"Bearer {token}"}
                     )
+                    _log_http_response("list_notas.docente.get_matriculas_clase", mat_response, f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas?clase_id={cid}&limit=100")
                     if mat_response.status_code == 200:
                         mats = mat_response.json().get("matriculas", [])
                         matriculas_ids.extend([m["id"] for m in mats])
@@ -253,9 +433,10 @@ async def list_notas(
         if clase_id and rol == "ADMIN":  # Solo ADMIN puede filtrar por clase específica directamente
             async with httpx.AsyncClient() as client:
                 mat_response = await client.get(
-                    f"{settings.PERSONAS_SERVICE_URL}/v1/admin/matriculas?clase_id={clase_id}&limit=100",
+                    f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas?clase_id={clase_id}&limit=100",
                     headers={"Authorization": f"Bearer {token}"}
                 )
+                _log_http_response("list_notas.admin.get_matriculas_clase", mat_response, f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas?clase_id={clase_id}&limit=100")
                 if mat_response.status_code == 200:
                     mats = mat_response.json().get("matriculas", [])
                     mat_ids = [m["id"] for m in mats]
@@ -264,9 +445,10 @@ async def list_notas(
         if alumno_id and rol in ["ADMIN", "DOCENTE"]:  # DOCENTE puede filtrar por alumno si está en sus clases
             async with httpx.AsyncClient() as client:
                 mat_response = await client.get(
-                    f"{settings.PERSONAS_SERVICE_URL}/v1/admin/matriculas?alumno_id={alumno_id}&limit=100",
+                    f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas?alumno_id={alumno_id}&limit=100",
                     headers={"Authorization": f"Bearer {token}"}
                 )
+                _log_http_response("list_notas.filter.alumno.get_matriculas", mat_response, f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas?alumno_id={alumno_id}&limit=100")
                 if mat_response.status_code == 200:
                     mats = mat_response.json().get("matriculas", [])
                     mat_ids = [m["id"] for m in mats]
@@ -275,30 +457,84 @@ async def list_notas(
         
         # Paginación
         total = query.count()
-        models = query.offset(offset).limit(limit).all()
+        models = query.order_by(NotaModel.created_at.desc()).offset(offset).limit(limit).all()
         
         from app.infrastructure.db.repositories import nota_model_to_domain
         notas = [nota_model_to_domain(m) for m in models]
-        
-        return {
-            "notas": [
-                {
-                    "id": n.id,
-                    "matricula_clase_id": n.matricula_clase_id,
-                    "tipo_evaluacion_id": n.tipo_evaluacion_id,
-                    "periodo_id": n.periodo_id,
-                    "escala_id": n.escala_id,
-                    "fecha_registro": n.fecha_registro.isoformat() if n.fecha_registro else None,
-                    "registrado_por_user_id": n.registrado_por_user_id,
-                    "valor_literal": n.valor_literal,
-                    "valor_numerico": n.valor_numerico,
-                    "peso": n.peso,
-                    "observaciones": n.observaciones,
-                    "created_at": n.created_at.isoformat() if n.created_at else None,
-                } for n in notas
-            ],
-            "total": total,
-        }
+
+        # Enriquecer las notas con clase_id y curso_id consultando Personas/Académico
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                # Map matricula_id -> {clase_id, alumno_id}
+                matricula_map = {}
+                for n in notas:
+                    mid = n.matricula_clase_id
+                    if mid in matricula_map:
+                        continue
+                    try:
+                        resp = await client.get(f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas/{mid}", headers={"Authorization": f"Bearer {token}"})
+                        _log_http_response("list_notas.get_matricula", resp, f"{settings.PERSONAS_SERVICE_URL}/v1/matriculas/{mid}")
+                        if resp.status_code == 200:
+                            mdata = resp.json()
+                            matricula_map[mid] = {
+                                "clase_id": mdata.get("clase_id"),
+                                "alumno_id": mdata.get("alumno_id")
+                            }
+                        else:
+                            matricula_map[mid] = {"clase_id": None, "alumno_id": None}
+                    except Exception:
+                        matricula_map[mid] = {"clase_id": None, "alumno_id": None}
+
+                # Map clase_id -> curso_id
+                clase_map = {}
+                clase_ids = set([v.get("clase_id") for v in matricula_map.values() if v.get("clase_id")])
+                for cid in clase_ids:
+                    try:
+                        resp = await client.get(f"{settings.ACADEMICO_SERVICE_URL}/v1/clases/{cid}", headers={"Authorization": f"Bearer {token}"})
+                        _log_http_response("list_notas.get_clase", resp, f"{settings.ACADEMICO_SERVICE_URL}/v1/clases/{cid}")
+                        if resp.status_code == 200:
+                            cdata = resp.json()
+                            clase_map[cid] = cdata.get("curso_id")
+                        else:
+                            clase_map[cid] = None
+                    except Exception:
+                        clase_map[cid] = None
+
+        except Exception as e:
+            # No bloquear la respuesta si falla el enriquecimiento; devolver sin curso/clase
+            print(f"[DEBUG NOTAS] Enriquecimiento notas falló: {e}")
+
+        notas_out = []
+        for n in notas:
+            clase_id = None
+            curso_id = None
+            try:
+                mm = matricula_map.get(n.matricula_clase_id) if 'matricula_map' in locals() else None
+                if mm:
+                    clase_id = mm.get('clase_id')
+                    curso_id = clase_map.get(clase_id) if clase_id and 'clase_map' in locals() else None
+            except Exception:
+                pass
+
+            notas_out.append({
+                "id": n.id,
+                "matricula_clase_id": n.matricula_clase_id,
+                "clase_id": clase_id,
+                "curso_id": curso_id,
+                "tipo_evaluacion_id": n.tipo_evaluacion_id,
+                "periodo_id": n.periodo_id,
+                "escala_id": n.escala_id,
+                "fecha_registro": n.fecha_registro.isoformat() if n.fecha_registro else None,
+                "registrado_por_user_id": n.registrado_por_user_id,
+                "valor_literal": n.valor_literal,
+                "valor_numerico": n.valor_numerico,
+                "peso": n.peso,
+                "observaciones": n.observaciones,
+                "created_at": n.created_at.isoformat() if n.created_at else None,
+            })
+
+        return {"notas": notas_out, "total": total}
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -355,6 +591,338 @@ async def list_alertas(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"error": "InternalError", "message": str(e)}
         )
+
+
+@router.get("/dashboard/admin")
+async def dashboard_admin(
+    db: Session = Depends(get_db),
+    settings = Depends(get_settings),
+):
+    """Métricas agregadas para el dashboard de ADMIN.
+    - conteo en tercios/quintos/décimos (top por nota)
+    - cursos con mayor promedio
+    - alumnos con promedios más bajos
+    - porcentaje por género
+    """
+    try:
+        from sqlalchemy import text, bindparam
+
+        # 1) Top tercio/quinto/décimo
+        q_rank = text("""
+        WITH ranked AS (
+            SELECT n.id, n.valor_numerico, m.alumno_id,
+                ROW_NUMBER() OVER (ORDER BY n.valor_numerico DESC) AS rn,
+                COUNT(*) OVER () AS total
+            FROM sga_notas.notas n
+            JOIN sga_personas.matriculas_clase m ON n.matricula_clase_id = m.id
+            WHERE n.is_deleted = FALSE AND n.valor_numerico IS NOT NULL
+        )
+        SELECT
+            COALESCE(SUM(CASE WHEN rn <= FLOOR(total/3) THEN 1 ELSE 0 END),0) AS tercio_top_count,
+            COALESCE(SUM(CASE WHEN rn <= FLOOR(total/5) THEN 1 ELSE 0 END),0) AS quinto_top_count,
+            COALESCE(SUM(CASE WHEN rn <= FLOOR(total/10) THEN 1 ELSE 0 END),0) AS decimo_top_count,
+            COALESCE(MAX(total),0) AS total_count
+        FROM ranked;
+        """)
+
+        r = db.execute(q_rank).fetchone()
+        tercio = int(r[0] or 0)
+        quinto = int(r[1] or 0)
+        decimo = int(r[2] or 0)
+        total_notes = int(r[3] or 0)
+
+        # 2) Cursos con promedio más alto (con manejo de errores)
+        try:
+            q_courses = text("""
+                SELECT c.id AS curso_id, c.nombre AS curso_nombre, AVG(n.valor_numerico) AS avg_grade, COUNT(*) AS cnt
+                FROM sga_notas.notas n
+                JOIN sga_personas.matriculas_clase m ON n.matricula_clase_id = m.id
+                JOIN sga_academico.clases cl ON m.clase_id = cl.id
+                JOIN sga_academico.cursos c ON cl.curso_id = c.id
+                WHERE n.is_deleted = FALSE AND n.valor_numerico IS NOT NULL
+                GROUP BY c.id, c.nombre
+                ORDER BY avg_grade DESC
+                LIMIT 5;
+                """)
+            courses = []
+            for row in db.execute(q_courses).fetchall():
+                try:
+                    courses.append(dict(row._mapping))
+                except Exception:
+                    try:
+                        courses.append(dict(row))
+                    except Exception:
+                        # best-effort: convert to tuple values with numbered keys
+                        courses.append({f"col_{i}": v for i, v in enumerate(row)})
+        except Exception as e:
+            print("[DEBUG DASHBOARD ADMIN] courses query failed:", e)
+            courses = []
+
+        # 3) Alumnos con notas más bajas (promedio) (con manejo de errores)
+        try:
+            q_low_students = text("""
+                SELECT a.id AS alumno_id, CONCAT(a.nombres, ' ', a.apellido_paterno) AS nombre, AVG(n.valor_numerico) AS avg_grade
+                FROM sga_notas.notas n
+                JOIN sga_personas.matriculas_clase m ON n.matricula_clase_id = m.id
+                JOIN sga_personas.alumnos a ON m.alumno_id = a.id
+                WHERE n.is_deleted = FALSE AND n.valor_numerico IS NOT NULL AND a.is_deleted = FALSE
+                GROUP BY a.id, a.nombres, a.apellido_paterno
+                ORDER BY avg_grade ASC
+                LIMIT 10;
+                """)
+            low_students = []
+            for row in db.execute(q_low_students).fetchall():
+                try:
+                    low_students.append(dict(row._mapping))
+                except Exception:
+                    try:
+                        low_students.append(dict(row))
+                    except Exception:
+                        low_students.append({f"col_{i}": v for i, v in enumerate(row)})
+        except Exception as e:
+            print("[DEBUG DASHBOARD ADMIN] low_students query failed:", e)
+            low_students = []
+
+        # 4) Porcentaje por género (con manejo de errores)
+        try:
+            q_gender = text("""
+                SELECT
+                    SUM(CASE WHEN a.genero = 'M' THEN 1 ELSE 0 END) AS male,
+                    SUM(CASE WHEN a.genero = 'F' THEN 1 ELSE 0 END) AS female,
+                    SUM(CASE WHEN a.genero NOT IN ('M','F') THEN 1 ELSE 0 END) AS other,
+                    COUNT(*) AS total
+                FROM sga_personas.alumnos a
+                WHERE a.is_deleted = FALSE;
+                """)
+            g = db.execute(q_gender).fetchone()
+            male = int(g[0] or 0)
+            female = int(g[1] or 0)
+            other = int(g[2] or 0)
+            total_students = int(g[3] or 0)
+            gender_pct = {
+                "male_pct": round((male/total_students*100) if total_students>0 else 0,2),
+                "female_pct": round((female/total_students*100) if total_students>0 else 0,2),
+                "other_pct": round((other/total_students*100) if total_students>0 else 0,2),
+                "total_students": total_students
+            }
+        except Exception as e:
+            print("[DEBUG DASHBOARD ADMIN] gender query failed:", e)
+            gender_pct = {"male_pct":0,"female_pct":0,"other_pct":0,"total_students":0}
+
+        return {
+            "tercio_top_count": tercio,
+            "quinto_top_count": quinto,
+            "decimo_top_count": decimo,
+            "total_notes": total_notes,
+            "top_courses": courses,
+            "low_students": low_students,
+            "gender": gender_pct
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error":"INTERNAL_ERROR","message":str(e)})
+
+
+@router.get("/dashboard/docente")
+async def dashboard_docente(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+    settings = Depends(get_settings),
+):
+    """Métricas del dashboard para DOCENTE (limitadas a sus clases)."""
+    try:
+        token = extract_bearer_token(authorization)
+        payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        user_id = payload.get('user_id') or payload.get('sub')
+
+        from sqlalchemy import text, bindparam
+
+        # Obtener clases del docente
+        q_clases = text("SELECT id FROM sga_academico.clases WHERE docente_user_id = :user_id AND is_deleted = FALSE")
+        clase_rows = db.execute(q_clases, {"user_id": user_id}).fetchall()
+        clase_ids = [r[0] for r in clase_rows]
+        if not clase_ids:
+            return {"message": "No hay clases asignadas", "top_courses": [], "low_students": [], "gender": {}}
+
+        # Filtrar notas por clases del docente (mediante matriculas)
+        q_rank = text(f"""
+        WITH ranked AS (
+            SELECT n.id, n.valor_numerico, m.alumno_id,
+                ROW_NUMBER() OVER (ORDER BY n.valor_numerico DESC) AS rn,
+                COUNT(*) OVER () AS total
+            FROM sga_notas.notas n
+            JOIN sga_personas.matriculas_clase m ON n.matricula_clase_id = m.id
+            JOIN sga_academico.clases cl ON m.clase_id = cl.id
+            WHERE n.is_deleted = FALSE AND n.valor_numerico IS NOT NULL AND cl.id IN :clase_ids
+        )
+        SELECT
+            COALESCE(SUM(CASE WHEN rn <= FLOOR(total/3) THEN 1 ELSE 0 END),0) AS tercio_top_count,
+            COALESCE(SUM(CASE WHEN rn <= FLOOR(total/5) THEN 1 ELSE 0 END),0) AS quinto_top_count,
+            COALESCE(SUM(CASE WHEN rn <= FLOOR(total/10) THEN 1 ELSE 0 END),0) AS decimo_top_count,
+            COALESCE(MAX(total),0) AS total_count
+        FROM ranked;
+        """)
+        q_rank = q_rank.bindparams(bindparam('clase_ids', expanding=True))
+        r = db.execute(q_rank, {"clase_ids": clase_ids}).fetchone()
+        tercio = int(r[0] or 0)
+        quinto = int(r[1] or 0)
+        decimo = int(r[2] or 0)
+
+        # Top cursos (por promedio) dentro de sus clases
+        q_courses = text(f"""
+        SELECT c.id AS curso_id, c.nombre AS curso_nombre, AVG(n.valor_numerico) AS avg_grade
+        FROM sga_notas.notas n
+        JOIN sga_personas.matriculas_clase m ON n.matricula_clase_id = m.id
+        JOIN sga_academico.clases cl ON m.clase_id = cl.id
+        JOIN sga_academico.cursos c ON cl.curso_id = c.id
+        WHERE n.is_deleted = FALSE AND n.valor_numerico IS NOT NULL AND cl.id IN :clase_ids
+        GROUP BY c.id, c.nombre
+        ORDER BY avg_grade DESC
+        LIMIT 5;
+        """)
+        q_courses = q_courses.bindparams(bindparam('clase_ids', expanding=True))
+        courses = []
+        for row in db.execute(q_courses, {"clase_ids": clase_ids}).fetchall():
+            try:
+                courses.append(dict(row._mapping))
+            except Exception:
+                try:
+                    courses.append(dict(row))
+                except Exception:
+                    courses.append({f"col_{i}": v for i, v in enumerate(row)})
+
+        # Alumnos con peores promedios dentro de sus clases
+        q_low_students = text(f"""
+        SELECT a.id AS alumno_id, CONCAT(a.nombres, ' ', a.apellido_paterno) AS nombre, AVG(n.valor_numerico) AS avg_grade
+        FROM sga_notas.notas n
+        JOIN sga_personas.matriculas_clase m ON n.matricula_clase_id = m.id
+        JOIN sga_personas.alumnos a ON m.alumno_id = a.id
+        JOIN sga_academico.clases cl ON m.clase_id = cl.id
+        WHERE n.is_deleted = FALSE AND n.valor_numerico IS NOT NULL AND cl.id IN :clase_ids
+        GROUP BY a.id, a.nombres, a.apellido_paterno
+        ORDER BY avg_grade ASC
+        LIMIT 10;
+        """)
+        q_low_students = q_low_students.bindparams(bindparam('clase_ids', expanding=True))
+        low_students = []
+        for row in db.execute(q_low_students, {"clase_ids": clase_ids}).fetchall():
+            try:
+                low_students.append(dict(row._mapping))
+            except Exception:
+                try:
+                    low_students.append(dict(row))
+                except Exception:
+                    low_students.append({f"col_{i}": v for i, v in enumerate(row)})
+
+        # Género entre sus alumnos
+        q_gender = text(f"""
+        SELECT
+            SUM(CASE WHEN a.genero = 'M' THEN 1 ELSE 0 END) AS male,
+            SUM(CASE WHEN a.genero = 'F' THEN 1 ELSE 0 END) AS female,
+            SUM(CASE WHEN a.genero NOT IN ('M','F') THEN 1 ELSE 0 END) AS other,
+            COUNT(DISTINCT a.id) AS total
+        FROM sga_personas.alumnos a
+        JOIN sga_personas.matriculas_clase m ON a.id = m.alumno_id
+        WHERE m.clase_id IN :clase_ids AND a.is_deleted = FALSE;
+        """)
+        q_gender = q_gender.bindparams(bindparam('clase_ids', expanding=True))
+        g = db.execute(q_gender, {"clase_ids": clase_ids}).fetchone()
+        male = int(g[0] or 0); female = int(g[1] or 0); other = int(g[2] or 0); total_students = int(g[3] or 0)
+        gender_pct = {
+            "male_pct": round((male/total_students*100) if total_students>0 else 0,2),
+            "female_pct": round((female/total_students*100) if total_students>0 else 0,2),
+            "other_pct": round((other/total_students*100) if total_students>0 else 0,2),
+            "total_students": total_students
+        }
+
+        return {
+            "tercio_top_count": tercio,
+            "quinto_top_count": quinto,
+            "decimo_top_count": decimo,
+            "top_courses": courses,
+            "low_students": low_students,
+            "gender": gender_pct
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error":"INTERNAL_ERROR","message":str(e)})
+
+
+@router.get("/dashboard/padre")
+async def dashboard_padre(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+    settings = Depends(get_settings),
+):
+    """Métricas del dashboard para PADRE: centradas en sus hijos."""
+    try:
+        token = extract_bearer_token(authorization)
+        payload = decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        user_id = payload.get('user_id') or payload.get('sub')
+        import httpx
+
+        # Pedir al servicio de personas los hijos del padre
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"{settings.PERSONAS_SERVICE_URL}/v1/relaciones/padre/{user_id}", headers={"Authorization": f"Bearer {token}"})
+            if resp.status_code != 200:
+                return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"error":"Forbidden","message":"No se pudieron obtener los hijos del padre"})
+            hijos = resp.json().get("hijos", [])
+            alumno_ids = [h.get("alumno_id") for h in hijos]
+
+        if not alumno_ids:
+            return {"message": "No tiene hijos asociados", "top_courses": [], "low_students": [], "gender": {}}
+
+        from sqlalchemy import text
+
+        # Promedios de sus hijos
+        q_low_students = text("""
+        SELECT a.id AS alumno_id, CONCAT(a.nombres, ' ', a.apellido_paterno) AS nombre, AVG(n.valor_numerico) AS avg_grade
+        FROM sga_notas.notas n
+        JOIN sga_personas.matriculas_clase m ON n.matricula_clase_id = m.id
+        JOIN sga_personas.alumnos a ON m.alumno_id = a.id
+        WHERE n.is_deleted = FALSE AND n.valor_numerico IS NOT NULL AND a.id IN :alumno_ids
+        GROUP BY a.id, a.nombres, a.apellido_paterno
+        ORDER BY avg_grade ASC
+        LIMIT 10;
+        """)
+        q_low_students = q_low_students.bindparams(bindparam('alumno_ids', expanding=True))
+        low_students = []
+        for row in db.execute(q_low_students, {"alumno_ids": alumno_ids}).fetchall():
+            try:
+                low_students.append(dict(row._mapping))
+            except Exception:
+                try:
+                    low_students.append(dict(row))
+                except Exception:
+                    low_students.append({f"col_{i}": v for i, v in enumerate(row)})
+
+        # Género de sus hijos
+        q_gender = text("""
+        SELECT
+            SUM(CASE WHEN a.genero = 'M' THEN 1 ELSE 0 END) AS male,
+            SUM(CASE WHEN a.genero = 'F' THEN 1 ELSE 0 END) AS female,
+            SUM(CASE WHEN a.genero NOT IN ('M','F') THEN 1 ELSE 0 END) AS other,
+            COUNT(*) AS total
+        FROM sga_personas.alumnos a
+        WHERE a.id IN :alumno_ids AND a.is_deleted = FALSE;
+        """)
+        q_gender = q_gender.bindparams(bindparam('alumno_ids', expanding=True))
+        g = db.execute(q_gender, {"alumno_ids": alumno_ids}).fetchone()
+        male = int(g[0] or 0); female = int(g[1] or 0); other = int(g[2] or 0); total_students = int(g[3] or 0)
+        gender_pct = {
+            "male_pct": round((male/total_students*100) if total_students>0 else 0,2),
+            "female_pct": round((female/total_students*100) if total_students>0 else 0,2),
+            "other_pct": round((other/total_students*100) if total_students>0 else 0,2),
+            "total_children": total_students
+        }
+
+        return {"low_students": low_students, "gender": gender_pct}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error":"INTERNAL_ERROR","message":str(e)})
 
 
 # ============================================================================

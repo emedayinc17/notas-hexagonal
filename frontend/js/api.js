@@ -5,6 +5,42 @@
 // API_CONFIG se declara en utils.js, que se carga primero
 // No redeclaramos aquí para evitar errores de sintaxis
 
+// Global fetch wrapper: añade headers de auth y logging ligero (temporal, para debugging)
+(() => {
+    try {
+        const nativeFetch = window.fetch.bind(window);
+        window.fetch = async function (input, init) {
+            init = init || {};
+            try {
+                // Merge auth headers if available
+                if (typeof getAuthHeaders === 'function') {
+                    init.headers = Object.assign({}, init.headers || {}, getAuthHeaders());
+                }
+            } catch (e) {
+                console.warn('[API] getAuthHeaders error', e);
+            }
+
+            try {
+                console.debug('[API] Request', (init.method || 'GET'), input, 'Auth?', !!(init.headers && (init.headers.Authorization || init.headers.authorization)));
+            } catch (e) { }
+
+            const res = await nativeFetch(input, init);
+
+            try {
+                const clone = res.clone();
+                const text = await clone.text();
+                console.debug('[API] Response', input, res.status, text);
+            } catch (e) {
+                // ignore body parse errors
+            }
+
+            return res;
+        };
+    } catch (e) {
+        console.warn('[API] No se pudo envolver fetch globalmente', e);
+    }
+})();
+
 // ============================================
 // IAM SERVICE - AUTENTICACIÓN Y USUARIOS
 // ============================================
@@ -386,6 +422,20 @@ const AcademicoService = {
     /**
      * PERIODOS
      */
+    async listTiposPeriodo(offset = 0, limit = 50) {
+        try {
+            const response = await fetch(
+                `${API_CONFIG.ACADEMICO_SERVICE}/v1/periodos/tipos?offset=${offset}&limit=${limit}`,
+                { headers: getAuthHeaders() }
+            );
+
+            if (!response.ok) throw new Error('Error al listar tipos de periodo');
+            return { success: true, data: await response.json() };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
     async createTipoPeriodo(tipoData) {
         try {
             const response = await fetch(`${API_CONFIG.ACADEMICO_SERVICE}/v1/periodos/tipos`, {
@@ -430,6 +480,17 @@ const AcademicoService = {
         }
     },
 
+    // Backwards-compatible aliases (métodos antiguos usados en algunas páginas)
+    async getPeriodos(offset = 0, limit = 50) {
+        return this.listPeriodos(offset, limit);
+    },
+    async getCursos(offset = 0, limit = 50) {
+        return this.listCursos(offset, limit);
+    },
+    async getClases(offset = 0, limit = 50) {
+        return this.listClases(offset, limit);
+    },
+
     async updatePeriodo(periodoId, periodoData) {
         try {
             const response = await fetch(`${API_CONFIG.ACADEMICO_SERVICE}/v1/periodos/${periodoId}`, {
@@ -466,12 +527,18 @@ const AcademicoService = {
         try {
             const response = await fetch(`${API_CONFIG.ACADEMICO_SERVICE}/v1/clases`, {
                 method: 'POST',
-                headers: getAuthHeaders(),
+                headers: Object.assign({}, getAuthHeaders(), { 'Content-Type': 'application/json' }),
                 body: JSON.stringify(claseData)
             });
 
-            if (!response.ok) throw new Error('Error al crear clase');
-            return { success: true, data: await response.json() };
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                const message = data.message || data.error || 'Error al crear clase';
+                return { success: false, error: message, status: response.status };
+            }
+
+            return { success: true, data };
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -503,6 +570,11 @@ const AcademicoService = {
         } catch (error) {
             return { success: false, error: error.message };
         }
+    },
+
+    // Alias para compatibilidad
+    async listClasesDocente() {
+        return this.getClasesDocente();
     },
 
     async updateClase(claseId, claseData) {
@@ -561,8 +633,29 @@ const AcademicoService = {
                 { headers: getAuthHeaders() }
             );
 
-            if (!response.ok) throw new Error('Error al obtener docentes activos');
-            return { success: true, data: await response.json() };
+            if (response.ok) {
+                return { success: true, data: await response.json() };
+            }
+
+            // Si el servidor responde 403 (forbidden), intentar fallback a IAM
+            if (response.status === 403) {
+                try {
+                    const iam = await IAMService.listUsers(0, 200);
+                    if (iam.success) {
+                        const users = iam.data.users || iam.data || [];
+                        const docentes = users.filter(u => u.rol?.nombre === 'DOCENTE');
+                        return { success: true, data: { docentes } };
+                    }
+                } catch (e) {
+                    // continue to error return below
+                }
+                return { success: false, error: 'Acceso denegado al servicio Académico (403)', status: 403 };
+            }
+
+            // Otros errores: parsear mensaje si hay
+            let body = {};
+            try { body = await response.json(); } catch (e) { }
+            return { success: false, error: body.message || body.error || `Error ${response.status}`, status: response.status };
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -598,10 +691,13 @@ const PersonasService = {
         }
     },
 
-    async listAlumnos(offset = 0, limit = 50) {
+    async listAlumnos(offset = 0, limit = 50, search = null) {
         try {
+            const params = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+            if (search) params.append('search', search);
+            
             const response = await fetch(
-                `${API_CONFIG.PERSONAS_SERVICE}/v1/alumnos?offset=${offset}&limit=${limit}`,
+                `${API_CONFIG.PERSONAS_SERVICE}/v1/alumnos?${params.toString()}`,
                 { headers: getAuthHeaders() }
             );
 
@@ -666,6 +762,20 @@ const PersonasService = {
         }
     },
 
+    async getNextCodigoAlumno() {
+        try {
+            const response = await fetch(
+                `${API_CONFIG.PERSONAS_SERVICE}/v1/alumnos/next-codigo`,
+                { headers: getAuthHeaders() }
+            );
+
+            if (!response.ok) throw new Error('Error al obtener siguiente código');
+            return { success: true, data: await response.json() };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
     /**
      * CLASES Y ALUMNOS
      */
@@ -675,15 +785,9 @@ const PersonasService = {
             const userData = getUserData();
             const rol = userData?.rol?.nombre;
 
-            let endpoint;
-            if (rol === 'ADMIN') {
-                endpoint = `${API_CONFIG.ACADEMICO_SERVICE}/v1/admin/clases/${claseId}/alumnos`;
-            } else if (rol === 'DOCENTE') {
-                endpoint = `${API_CONFIG.ACADEMICO_SERVICE}/v1/docente/clases/${claseId}/alumnos`;
-            } else {
-                throw new Error('Rol no autorizado para ver alumnos de clases');
-            }
-
+            // Llamar directamente al Personas Service para evitar doble verificación
+            // El endpoint admin de Personas acepta DOCENTE y ADMIN y retorna alumnos.
+            const endpoint = `${API_CONFIG.PERSONAS_SERVICE}/v1/clases/${claseId}/alumnos`;
             const response = await fetch(endpoint, { headers: getAuthHeaders() });
 
             if (!response.ok) throw new Error('Error al obtener alumnos de la clase');
@@ -770,7 +874,17 @@ const PersonasService = {
                 body: JSON.stringify(relacionData)
             });
 
-            if (!response.ok) throw new Error('Error al crear relación');
+            if (!response.ok) {
+                // Intentar obtener el mensaje de error del backend
+                try {
+                    const errorData = await response.json();
+                    const errorMessage = errorData.message || errorData.error || `Error ${response.status}`;
+                    return { success: false, error: errorMessage, status: response.status };
+                } catch {
+                    return { success: false, error: `Error ${response.status}: ${response.statusText}`, status: response.status };
+                }
+            }
+
             return { success: true, data: await response.json() };
         } catch (error) {
             return { success: false, error: error.message };
@@ -816,8 +930,15 @@ const PersonasService = {
                 body: JSON.stringify(matriculaData)
             });
 
-            if (!response.ok) throw new Error('Error al crear matrícula');
-            return { success: true, data: await response.json() };
+            // Intentar parsear cuerpo de respuesta para mensajes de error explícitos
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                const message = data.message || data.error || `Error ${response.status}`;
+                return { success: false, error: message, status: response.status };
+            }
+
+            return { success: true, data };
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -837,18 +958,35 @@ const PersonasService = {
         }
     },
 
-    async listMatriculas(offset = 0, limit = 50) {
+    async listMatriculas(offset = 0, limit = 50, alumnoId = null, claseId = null, periodoId = null, search = null, status = null) {
         try {
-            const response = await fetch(
-                `${API_CONFIG.PERSONAS_SERVICE}/v1/matriculas?offset=${offset}&limit=${limit}`,
-                { headers: getAuthHeaders() }
-            );
+            // Construir parámetros con soporte para filtros opcionales
+            const params = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+            if (alumnoId) params.append('alumno_id', alumnoId);
+            if (claseId) params.append('clase_id', claseId);
+            if (periodoId) params.append('periodo_id', periodoId);
+            if (search) params.append('search', search);
+            if (status) params.append('status', status);
+            params.append('_ts', String(Date.now())); // cache-buster
 
-            if (!response.ok) throw new Error('Error al listar matrículas');
-            return { success: true, data: await response.json() };
+            const url = `${API_CONFIG.PERSONAS_SERVICE}/v1/matriculas?${params.toString()}`;
+            const response = await fetch(url, { headers: getAuthHeaders(), cache: 'no-store' });
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                const message = data.message || data.error || `Error ${response.status}`;
+                return { success: false, error: message, status: response.status };
+            }
+
+            return { success: true, data };
         } catch (error) {
             return { success: false, error: error.message };
         }
+    },
+
+    // Backwards-compatible alias para llamadas antiguas desde frontend
+    async getMatriculas(offset = 0, limit = 50) {
+        return this.listMatriculas(offset, limit);
     },
 
     async deleteMatricula(matriculaId) {
@@ -924,6 +1062,21 @@ const NotasService = {
         }
     },
 
+    async createNotasBatch(notasData) {
+        try {
+            const response = await fetch(`${API_CONFIG.NOTAS_SERVICE}/v1/notas/batch`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ notas: notasData })
+            });
+
+            if (!response.ok) throw new Error('Error al registrar notas en lote');
+            return { success: true, data: await response.json() };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
     async listNotas(alumnoId = null, claseId = null, periodoId = null, offset = 0, limit = 100) {
         try {
             const params = new URLSearchParams({
@@ -945,6 +1098,36 @@ const NotasService = {
         } catch (error) {
             return { success: false, error: error.message };
         }
+    },
+
+    /**
+     * Listar notas para panel admin con soporte de filtros y paginación del servidor.
+     * filters: { periodo_id, grado_id, seccion_id, curso_id, search }
+     */
+    async listNotasAdmin(filters = {}, offset = 0, limit = 20) {
+        try {
+            const params = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+            if (filters.periodo_id) params.append('periodo_id', filters.periodo_id);
+            if (filters.grado_id) params.append('grado_id', filters.grado_id);
+            if (filters.seccion_id) params.append('seccion_id', filters.seccion_id);
+            if (filters.curso_id) params.append('curso_id', filters.curso_id);
+            if (filters.search) params.append('search', filters.search);
+            // cache-buster
+            params.append('_ts', String(Date.now()));
+
+            const url = `${API_CONFIG.NOTAS_SERVICE}/v1/notas?${params.toString()}`;
+            const response = await fetch(url, { headers: getAuthHeaders() });
+
+            if (!response.ok) throw new Error('Error al listar notas (admin)');
+            return { success: true, data: await response.json() };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Compatibilidad: alias antiguo getNotas()
+    async getNotas(alumnoId = null, claseId = null, periodoId = null, offset = 0, limit = 100) {
+        return this.listNotas(alumnoId, claseId, periodoId, offset, limit);
     },
 
     async getNotasAlumno(alumnoId, offset = 0, limit = 50) {
@@ -1072,6 +1255,49 @@ const NotasService = {
     // Alias para mantener consistencia con el código frontend
     async getNotasPorAlumno(alumnoId, offset = 0, limit = 50) {
         return this.getNotasAlumno(alumnoId, offset, limit);
+    }
+    ,
+
+    /**
+     * DASHBOARD - endpoints agregados en backend
+     */
+    async getDashboardAdmin() {
+        try {
+            const response = await fetch(`${API_CONFIG.NOTAS_SERVICE}/v1/dashboard/admin`, {
+                headers: getAuthHeaders()
+            });
+
+            if (!response.ok) throw new Error('Error al obtener dashboard admin');
+            return { success: true, data: await response.json() };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    async getDashboardDocente() {
+        try {
+            const response = await fetch(`${API_CONFIG.NOTAS_SERVICE}/v1/dashboard/docente`, {
+                headers: getAuthHeaders()
+            });
+
+            if (!response.ok) throw new Error('Error al obtener dashboard docente');
+            return { success: true, data: await response.json() };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    async getDashboardPadre() {
+        try {
+            const response = await fetch(`${API_CONFIG.NOTAS_SERVICE}/v1/dashboard/padre`, {
+                headers: getAuthHeaders()
+            });
+
+            if (!response.ok) throw new Error('Error al obtener dashboard padre');
+            return { success: true, data: await response.json() };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
     }
 };
 

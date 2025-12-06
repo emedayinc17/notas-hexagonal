@@ -8,7 +8,16 @@
 async function abrirGestionNotas(alumnoId, apellidos, nombres) {
     try {
         showLoading('Cargando cursos matriculados...');
-        
+
+        // Si no se pasan apellidos/nombres (ej. vista admin), intentar obtenerlos del alumno
+        if (!apellidos || !nombres) {
+            const alumnoFallback = (alumnosAsignados && alumnosAsignados.length ? alumnosAsignados : alumnos).find(a => a.id === alumnoId);
+            if (alumnoFallback) {
+                apellidos = alumnoFallback.apellidos;
+                nombres = alumnoFallback.nombres;
+            }
+        }
+
         // Mostrar información del alumno
         document.getElementById('alumnoInfo').innerHTML = `
             <div class="d-flex align-items-center">
@@ -21,23 +30,40 @@ async function abrirGestionNotas(alumnoId, apellidos, nombres) {
                 </div>
             </div>
         `;
-        
+
         // Obtener clases donde está matriculado el alumno y el docente actual enseña
-        const alumnoData = alumnosAsignados.filter(a => a.id === alumnoId);
-        
+        const sourceAlumnos = (alumnosAsignados && alumnosAsignados.length) ? alumnosAsignados : alumnos;
+        const alumnoData = sourceAlumnos.filter(a => a.id === alumnoId);
+
         if (alumnoData.length === 0) {
             throw new Error('No se encontraron cursos para este alumno');
         }
-        
+
+
+        showLoading('Cargando cursos matriculados...');
+
+        // Mostrar información del alumno
+        document.getElementById('alumnoInfo').innerHTML = `
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="bi bi-person-circle" style="font-size: 2.5rem; color: #0066cc;"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1"><strong>${apellidos}, ${nombres}</strong></h5>
+                    <small class="text-muted">ID: ${alumnoId} • Sistema de Calificación Personalizada por Curso</small>
+                </div>
+            </div>
+        `;
+
         // Agrupar por curso/clase
         const cursosMatriculados = {};
-        
+
         for (const registro of alumnoData) {
             const curso = cursos.find(c => c.id === registro.curso_id);
             const seccion = secciones.find(s => s.id === registro.seccion_id);
             const grado = grados.find(g => g.id === seccion?.grado_id);
             const periodo = periodos.find(p => p.id === registro.periodo_id);
-            
+
             cursosMatriculados[registro.clase_id] = {
                 clase_id: registro.clase_id,
                 matricula_clase_id: registro.matricula_clase_id, // ID de matrícula necesario para registrar notas
@@ -50,7 +76,7 @@ async function abrirGestionNotas(alumnoId, apellidos, nombres) {
                 notas: []
             };
         }
-        
+
         // Cargar notas existentes por curso
         for (const claseId in cursosMatriculados) {
             try {
@@ -63,7 +89,7 @@ async function abrirGestionNotas(alumnoId, apellidos, nombres) {
                 console.warn(`No se pudieron cargar notas para clase ${claseId}:`, error);
             }
         }
-        
+
         // Generar HTML tipo SIAGIE
         let modalContent = `
             <div class="mb-3 p-3 bg-primary text-white rounded">
@@ -71,18 +97,18 @@ async function abrirGestionNotas(alumnoId, apellidos, nombres) {
                 <small>Gestiona las notas por curso. Cada curso puede usar calificación numérica (0-20) o literal (AD, A, B, C)</small>
             </div>
         `;
-        
+
         Object.values(cursosMatriculados).forEach(cursoInfo => {
             // Determinar tipo de calificación actual
             let tipoCalificacion = 'numerico'; // Por defecto numérico
             let bloqueado = false;
-            
+
             if (cursoInfo.notas.length > 0) {
                 const primeraNota = cursoInfo.notas[0];
                 tipoCalificacion = primeraNota.valor_literal ? 'literal' : 'numerico';
                 bloqueado = true; // Si ya hay notas, no se puede cambiar el tipo
             }
-            
+
             // Calcular promedio
             let promedioDisplay = '-';
             if (cursoInfo.notas.length > 0) {
@@ -98,7 +124,7 @@ async function abrirGestionNotas(alumnoId, apellidos, nombres) {
                     promedioDisplay = ultimaNota.valor_literal || '-';
                 }
             }
-            
+
             modalContent += `
                 <div class="card mb-4 border-2 border-primary">
                     <div class="card-header bg-light">
@@ -173,7 +199,7 @@ async function abrirGestionNotas(alumnoId, apellidos, nombres) {
                 </div>
             `;
         });
-        
+
         if (Object.keys(cursosMatriculados).length === 0) {
             modalContent = `
                 <div class="alert alert-warning">
@@ -183,17 +209,17 @@ async function abrirGestionNotas(alumnoId, apellidos, nombres) {
                 </div>
             `;
         }
-        
+
         document.getElementById('notasAlumnoContainer').innerHTML = modalContent;
-        
+
         // Guardar datos globales
         window.currentAlumnoId = alumnoId;
         window.currentAlumnoNombre = `${apellidos}, ${nombres}`;
         window.currentCursosMatriculados = cursosMatriculados;
-        
+
         // Mostrar modal
         new bootstrap.Modal(document.getElementById('modalGestionarNotas')).show();
-        
+
     } catch (error) {
         console.error('Error cargando notas:', error);
         showToast('Error', 'No se pudieron cargar las notas del alumno: ' + error.message, 'error');
@@ -217,12 +243,12 @@ function generateNotasRowsSiagie(notas, claseId, tipoCalificacion) {
             </tr>
         `;
     }
-    
+
     return notas.map((nota, index) => {
-        const valor = tipoCalificacion === 'numerico' 
+        const valor = tipoCalificacion === 'numerico'
             ? (nota.valor_numerico || '-')
             : (nota.valor_literal || '-');
-            
+
         // Determinar color según la calificación
         let badgeClass = 'bg-secondary';
         if (tipoCalificacion === 'numerico' && nota.valor_numerico) {
@@ -231,14 +257,14 @@ function generateNotasRowsSiagie(notas, claseId, tipoCalificacion) {
             else if (nota.valor_numerico >= 11) badgeClass = 'bg-warning';
             else badgeClass = 'bg-danger';
         } else if (tipoCalificacion === 'literal') {
-            switch(nota.valor_literal) {
+            switch (nota.valor_literal) {
                 case 'AD': badgeClass = 'bg-success'; break;
                 case 'A': badgeClass = 'bg-primary'; break;
                 case 'B': badgeClass = 'bg-warning'; break;
                 case 'C': badgeClass = 'bg-danger'; break;
             }
         }
-            
+
         return `
             <tr class="${index % 2 === 0 ? 'table-light' : ''}">
                 <td>
@@ -270,9 +296,9 @@ function generateNotasRowsSiagie(notas, claseId, tipoCalificacion) {
                 </td>
                 <td class="text-center">
                     <small class="text-muted">
-                        ${nota.observaciones ? 
-                            `<i class="bi bi-chat-text" title="${nota.observaciones}"></i>` : 
-                            '<i class="bi bi-dash-circle text-muted" title="Sin observaciones"></i>'}
+                        ${nota.observaciones ?
+                `<i class="bi bi-chat-text" title="${nota.observaciones}"></i>` :
+                '<i class="bi bi-dash-circle text-muted" title="Sin observaciones"></i>'}
                     </small>
                 </td>
             </tr>
@@ -298,7 +324,7 @@ function formatDateSiagie(dateString) {
  */
 function cambiarTipoCalificacion(claseId, nuevoTipo) {
     console.log(`Cambio tipo de calificación para clase ${claseId} a ${nuevoTipo}`);
-    
+
     // Actualizar la tabla de notas
     const cursoInfo = window.currentCursosMatriculados[claseId];
     if (cursoInfo) {
@@ -306,7 +332,7 @@ function cambiarTipoCalificacion(claseId, nuevoTipo) {
         if (notasTableBody) {
             notasTableBody.innerHTML = generateNotasRowsSiagie(cursoInfo.notas, claseId, nuevoTipo);
         }
-        
+
         // Actualizar header de la tabla
         const headerCelda = document.querySelector(`#notasTable_${claseId}`)?.closest('table')
             ?.querySelector('thead th:nth-child(2)');
@@ -321,7 +347,7 @@ function cambiarTipoCalificacion(claseId, nuevoTipo) {
  */
 function agregarNuevaNotaSiagie(claseId, alumnoId, cursoNombre, tipoCalificacion) {
     const modalId = `modalNuevaNota_${claseId}`;
-    
+
     // Crear modal dinámico
     const modalHTML = `
         <div class="modal fade" id="${modalId}" tabindex="-1">
@@ -429,16 +455,16 @@ function agregarNuevaNotaSiagie(claseId, alumnoId, cursoNombre, tipoCalificacion
             </div>
         </div>
     `;
-    
+
     // Eliminar modal anterior si existe
     const existingModal = document.getElementById(modalId);
     if (existingModal) {
         existingModal.remove();
     }
-    
+
     // Agregar nuevo modal al DOM
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
+
     // Mostrar modal
     new bootstrap.Modal(document.getElementById(modalId)).show();
 }
@@ -448,7 +474,7 @@ function agregarNuevaNotaSiagie(claseId, alumnoId, cursoNombre, tipoCalificacion
  */
 async function guardarNuevaNotaSiagie(event, claseId, alumnoId, tipoCalificacion) {
     event.preventDefault();
-    
+
     try {
         // Obtener ID de matrícula
         const cursoInfo = window.currentCursosMatriculados[claseId];
@@ -460,7 +486,7 @@ async function guardarNuevaNotaSiagie(event, claseId, alumnoId, tipoCalificacion
         const tipoEvalId = document.getElementById(`tipoEval_${claseId}`).value;
         const periodoActivo = periodos.find(p => p.activo) || periodos[0];
         const periodoId = periodoActivo ? periodoActivo.id : '1';
-        
+
         // Buscar escala adecuada
         let escalaId = '1';
         if (escalas && escalas.length > 0) {
@@ -483,7 +509,7 @@ async function guardarNuevaNotaSiagie(event, claseId, alumnoId, tipoCalificacion
             peso: parseInt(document.getElementById(`pesoValue_${claseId}`).value),
             observaciones: document.getElementById(`obs_${claseId}`).value || null
         };
-        
+
         // Agregar valor según tipo
         if (tipoCalificacion === 'numerico') {
             notaData.valor_numerico = parseFloat(document.getElementById(`valorNum_${claseId}`).value);
@@ -492,17 +518,17 @@ async function guardarNuevaNotaSiagie(event, claseId, alumnoId, tipoCalificacion
             notaData.valor_literal = document.getElementById(`valorLit_${claseId}`).value;
             notaData.valor_numerico = null;
         }
-        
+
         showLoading('Guardando evaluación...');
-        
+
         const result = await NotasService.createNota(notaData);
-        
+
         if (result.success) {
             showToast('Éxito', '✅ Evaluación registrada correctamente', 'success');
-            
+
             // Cerrar modal
             bootstrap.Modal.getInstance(document.getElementById(`modalNuevaNota_${claseId}`)).hide();
-            
+
             // Recargar notas
             if (window.currentAlumnoId && window.currentAlumnoNombre) {
                 const nombres = window.currentAlumnoNombre.split(', ');
@@ -511,7 +537,7 @@ async function guardarNuevaNotaSiagie(event, claseId, alumnoId, tipoCalificacion
         } else {
             throw new Error(result.error || 'Error al guardar la evaluación');
         }
-        
+
     } catch (error) {
         console.error('Error guardando nota:', error);
         showToast('Error', '❌ ' + error.message, 'error');

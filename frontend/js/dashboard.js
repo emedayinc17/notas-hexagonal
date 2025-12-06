@@ -2,8 +2,9 @@
 // DASHBOARD MAIN LOGIC
 // ============================================
 
-let currentUser = null;
-let currentRole = null;
+// Evitar redeclaraciones si otros scripts también definen `currentUser` o `currentRole`
+if (typeof currentUser === 'undefined') currentUser = null;
+if (typeof currentRole === 'undefined') currentRole = null;
 
 document.addEventListener('DOMContentLoaded', async function () {
     // Verificar autenticación
@@ -15,8 +16,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Configurar sidebar
     setupSidebar();
 
-    // Cargar contenido inicial del dashboard
-    loadDashboardContent();
+    // Cargar contenido inicial del dashboard (solo si la página tiene el contenedor)
+    if (document.getElementById('contentArea')) {
+        loadDashboardContent();
+    }
 
     // Setup sidebar collapse
     const sidebarCollapse = document.getElementById('sidebarCollapse');
@@ -69,7 +72,7 @@ async function loadUserData() {
  * Configura el menú del sidebar según el rol
  */
 function setupSidebar() {
-    const menuItems = getMenuItemsByRole(currentRole);
+    const menuItems = (typeof getMenuItemsByRole === 'function') ? getMenuItemsByRole(currentRole) : [];
     const sidebarMenu = document.getElementById('sidebarMenu');
 
     sidebarMenu.innerHTML = menuItems.map(item => `
@@ -86,7 +89,17 @@ function setupSidebar() {
         link.addEventListener('click', function (e) {
             e.preventDefault();
             const page = this.dataset.page;
-            navigateTo(page);
+
+            if (!page) return;
+
+            // Si el item ya contiene un archivo .html, navegar directamente
+            if (page.indexOf('.html') !== -1) {
+                const candidate = page.startsWith('/') ? page : `/pages/${page}`;
+                window.location.href = candidate;
+            } else {
+                // Si viene un slug (p.ej. 'mis-clases' o 'notas'), usar el mapeo existente
+                navigateTo(page);
+            }
 
             // Actualizar active
             sidebarMenu.querySelectorAll('a').forEach(a => a.classList.remove('active'));
@@ -98,33 +111,7 @@ function setupSidebar() {
 /**
  * Retorna los items del menú según el rol
  */
-function getMenuItemsByRole(role) {
-    const menus = {
-        'ADMIN': [
-            { page: 'home', label: 'Dashboard', icon: 'grid-fill', active: true },
-            { page: 'grados', label: 'Grados', icon: 'bookmark-fill', active: false },
-            { page: 'cursos', label: 'Cursos', icon: 'book-fill', active: false },
-            { page: 'secciones', label: 'Secciones', icon: 'collection-fill', active: false },
-            { page: 'periodos', label: 'Periodos', icon: 'calendar-range-fill', active: false },
-            { page: 'clases', label: 'Clases', icon: 'door-open-fill', active: false },
-            { page: 'alumnos', label: 'Alumnos', icon: 'people-fill', active: false },
-            { page: 'matriculas', label: 'Matrículas', icon: 'journal-check', active: false },
-            { page: 'usuarios', label: 'Usuarios', icon: 'person-gear', active: false },
-            { page: 'notas', label: 'Notas', icon: 'clipboard-check', active: false }
-        ],
-        'DOCENTE': [
-            { page: 'home', label: 'Dashboard', icon: 'grid-fill', active: true },
-            { page: 'mis-clases', label: 'Mis Clases', icon: 'door-open-fill', active: false },
-            { page: 'notas', label: 'Gestionar Notas', icon: 'clipboard-check', active: false }
-        ],
-        'PADRE': [
-            { page: 'home', label: 'Dashboard', icon: 'grid-fill', active: true },
-            { page: 'notas-hijos', label: 'Notas de mis Hijos', icon: 'card-checklist', active: false }
-        ]
-    };
-
-    return menus[role] || [];
-}
+// Nota: usamos la implementación central en `utils.getMenuItemsByRole` para mantener consistencia.
 
 /**
  * Navega a una página específica
@@ -150,9 +137,15 @@ function navigateTo(page) {
         return;
     }
 
-    // Para home, quedarse en dashboard
+    // Para home, ir al dashboard principal
     if (page === 'home') {
-        loadDashboardContent();
+        // Si ya estamos en dashboard.html, recargar contenido
+        if (window.location.pathname.endsWith('dashboard.html')) {
+            loadDashboardContent();
+        } else {
+            // Si estamos en otra página, ir a dashboard.html
+            window.location.href = '../pages/dashboard.html';
+        }
     }
 }
 
@@ -161,6 +154,7 @@ function navigateTo(page) {
  */
 function loadDashboardContent() {
     const content = document.getElementById('contentArea');
+    if (!content) return; // Guard clause if element doesn't exist
 
     // Crear un div para el contenido dinámico
     let dynamicContent = content.querySelector('.dynamic-dashboard-content');
@@ -277,7 +271,10 @@ async function loadAdminDashboard(container) {
     `;
 
     // Cargar estadísticas
-    loadAdminStats();
+    await loadAdminStats();
+
+    // Cargar métricas del dashboard (top cursos, género, peores alumnos)
+    loadAdminMetrics();
 }
 
 /**
@@ -294,30 +291,30 @@ async function loadAdminStats() {
 
         if (alumnos.success) {
             // Priorizar el campo 'total' si existe, sino contar elementos del array
-            const totalAlumnos = alumnos.data.total || 
-                                (alumnos.data.alumnos && alumnos.data.alumnos.length) || 
-                                (Array.isArray(alumnos.data) ? alumnos.data.length : 0);
+            const totalAlumnos = alumnos.data.total ||
+                (alumnos.data.alumnos && alumnos.data.alumnos.length) ||
+                (Array.isArray(alumnos.data) ? alumnos.data.length : 0);
             document.getElementById('totalAlumnos').textContent = totalAlumnos;
         }
-        
+
         if (cursos.success) {
-            const totalCursos = cursos.data.total || 
-                              (cursos.data.cursos && cursos.data.cursos.length) || 
-                              (Array.isArray(cursos.data) ? cursos.data.length : 0);
+            const totalCursos = cursos.data.total ||
+                (cursos.data.cursos && cursos.data.cursos.length) ||
+                (Array.isArray(cursos.data) ? cursos.data.length : 0);
             document.getElementById('totalCursos').textContent = totalCursos;
         }
-        
+
         if (clases.success) {
-            const totalClases = clases.data.total || 
-                              (clases.data.clases && clases.data.clases.length) || 
-                              (Array.isArray(clases.data) ? clases.data.length : 0);
+            const totalClases = clases.data.total ||
+                (clases.data.clases && clases.data.clases.length) ||
+                (Array.isArray(clases.data) ? clases.data.length : 0);
             document.getElementById('totalClases').textContent = totalClases;
         }
-        
+
         if (usuarios.success) {
-            const totalUsuarios = usuarios.data.total || 
-                                 (usuarios.data.usuarios && usuarios.data.usuarios.length) || 
-                                 (Array.isArray(usuarios.data) ? usuarios.data.length : 0);
+            const totalUsuarios = usuarios.data.total ||
+                (usuarios.data.usuarios && usuarios.data.usuarios.length) ||
+                (Array.isArray(usuarios.data) ? usuarios.data.length : 0);
             document.getElementById('totalUsuarios').textContent = totalUsuarios;
         }
     } catch (error) {
@@ -331,39 +328,262 @@ async function loadAdminStats() {
 }
 
 /**
+ * Asegura que Chart.js esté cargado (carga dinámica desde CDN si es necesario)
+ */
+function ensureChartJs() {
+    return new Promise((resolve, reject) => {
+        if (window.Chart) return resolve(window.Chart);
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+        script.onload = () => resolve(window.Chart);
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * Carga y renderiza métricas del dashboard para ADMIN
+ */
+async function loadAdminMetrics() {
+    try {
+        const result = await NotasService.getDashboardAdmin();
+        const container = document.querySelector('.dynamic-dashboard-content');
+        if (!container) return;
+
+        // Crear contenedor de métricas si no existe
+        let metricsEl = document.getElementById('adminMetricsContainer');
+        if (!metricsEl) {
+            metricsEl = document.createElement('div');
+            metricsEl.id = 'adminMetricsContainer';
+            metricsEl.className = 'row g-4 mt-4';
+            container.appendChild(metricsEl);
+        }
+
+        if (!result.success) {
+            metricsEl.innerHTML = `<div class="col-12"><div class="alert alert-warning">No se pudieron cargar métricas: ${result.error}</div></div>`;
+            return;
+        }
+
+        const data = result.data || {};
+
+        // Compatibilidad con distintos nombres de campo (backend puede devolver english keys)
+        const topCursos = (data.top_cursos || data.top_courses || []).slice(0, 5);
+        const worstAlumnos = (data.peores_alumnos || data.low_students || data.low_students || []).slice(0, 5);
+        const gender = data.gender_pct || data.gender || {};
+
+        // Reorganizado por UX: eliminada la sección "Distribución por Género"
+        metricsEl.innerHTML = `
+            <div class="col-md-8">
+                <div class="card shadow-soft">
+                    <div class="card-header">Top Cursos</div>
+                    <div class="card-body">
+                        <ol id="topCursosList" class="mb-0"></ol>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-soft">
+                    <div class="card-header">Alumnos con peores notas</div>
+                    <div class="card-body">
+                        <ol id="worstAlumnosList" class="mb-0"></ol>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Render top cursos
+        const topList = document.getElementById('topCursosList');
+        topCursos.forEach(c => {
+            const nombre = c.nombre || c.curso || c.curso_nombre || c.cursoName || 'Curso';
+            const promedio = (typeof c.promedio !== 'undefined') ? c.promedio : (typeof c.avg_grade !== 'undefined' ? c.avg_grade : undefined);
+            const li = document.createElement('li');
+            li.textContent = `${nombre} — Promedio: ${typeof promedio !== 'undefined' ? Number(promedio).toFixed(2) : '-'} `;
+            topList.appendChild(li);
+        });
+
+        // Render peores alumnos
+        const worstList = document.getElementById('worstAlumnosList');
+        worstAlumnos.forEach(a => {
+            const nombre = a.alumno || a.nombre || a.alumno_nombre || 'Alumno';
+            const promedio = (typeof a.promedio !== 'undefined') ? a.promedio : (typeof a.avg_grade !== 'undefined' ? a.avg_grade : undefined);
+            const li = document.createElement('li');
+            li.textContent = `${nombre} — Promedio: ${typeof promedio !== 'undefined' ? Number(promedio).toFixed(2) : '-'} `;
+            worstList.appendChild(li);
+        });
+
+        // Distribución por género eliminada del dashboard por requerimiento UX.
+    } catch (error) {
+        console.error('Error loading admin metrics:', error);
+    }
+}
+
+/**
  * Dashboard para DOCENTE
  */
 async function loadDocenteDashboard(container) {
     container.innerHTML = `
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="stat-card card fade-in">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="stat-icon primary me-3">
+                            <i class="bi bi-door-open-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-number" id="docenteTotalClases">-</div>
+                            <div class="stat-label">Mis Clases Asignadas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-card card fade-in">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="stat-icon success me-3">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-number" id="docenteTotalAlumnos">-</div>
+                            <div class="stat-label">Total Alumnos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-4">
-            <div class="col-md-12">
-                <div class="card shadow-soft">
+            <div class="col-12">
+                <div class="card shadow-soft h-100">
                     <div class="card-body">
                         <h5 class="card-title mb-4">
-                            <i class="bi bi-person-video3 me-2"></i>Bienvenido, Docente
+                            <i class="bi bi-lightning-charge me-2"></i>Acciones Rápidas
                         </h5>
-                        <p class="text-muted">Gestiona tus clases y registra las notas de tus alumnos.</p>
-                        <div class="row mt-4">
-                            <div class="col-md-6">
-                                <div class="d-grid">
-                                    <button class="btn btn-primary btn-lg" onclick="navigateTo('mis-clases')">
-                                        <i class="bi bi-door-open-fill me-2"></i>Ver Mis Clases
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="d-grid">
-                                    <button class="btn btn-success btn-lg" onclick="navigateTo('notas')">
-                                        <i class="bi bi-pencil-square me-2"></i>Gestionar Notas
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="d-grid gap-3 d-md-flex">
+                            <button class="btn btn-primary btn-lg me-3" onclick="navigateTo('mis-clases')">
+                                <i class="bi bi-door-open-fill me-2"></i>Ir a Mis Clases
+                            </button>
+                            <button class="btn btn-success btn-lg" onclick="navigateTo('notas')">
+                                <i class="bi bi-pencil-square me-2"></i>Registrar Notas
+                            </button>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top">
+                            <h6 class="text-muted mb-3"><i class="bi bi-info-circle me-2"></i>Tips</h6>
+                            <p class="small text-muted mb-0">
+                                Recuerda registrar las notas a tiempo para evitar retrasos en la generación de libretas.
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     `;
+
+    // Cargar datos reales
+    try {
+        const result = await AcademicoService.listClasesDocente();
+        if (result.success) {
+            const clases = result.data.clases || [];
+            try { console.debug('[DocenteDashboard] clases payload:', clases); } catch (e) {}
+
+            // Actualizar contadores
+            document.getElementById('docenteTotalClases').textContent = clases.length;
+
+            // Intentar calcular total de alumnos inspeccionando múltiples posibles campos
+            let totalAlumnos = clases.reduce((acc, c) => {
+                // Comprobar varios nombres de campo usados por backends distintos
+                const candidates = [
+                    c.alumnos_count,
+                    c.inscritos_count,
+                    c.alumnos_total,
+                    c.enrolled_count,
+                    c.enrolled,
+                    c.students_count,
+                    c.total_alumnos,
+                    c.count_alumnos
+                ];
+
+                let n = 0;
+                for (const cand of candidates) {
+                    if (cand == null) continue;
+                    // Si es array, usar su longitud
+                    if (Array.isArray(cand)) {
+                        n = cand.length;
+                        break;
+                    }
+                    const parsed = Number(cand);
+                    if (!isNaN(parsed) && parsed > 0) {
+                        n = parsed;
+                        break;
+                    }
+                }
+
+                // Si la clase tiene una propiedad 'alumnos' como array, contarlos
+                if (n === 0 && Array.isArray(c.alumnos)) n = c.alumnos.length;
+
+                return acc + (Number(n) || 0);
+            }, 0);
+
+            // Si no hay información en los objetos de clase, consultar alumnos por clase y contar únicos
+            if (totalAlumnos === 0 && clases.length > 0) {
+                try {
+                    const promises = clases.map(c => {
+                        const id = c.id || c.clase_id || c.id_clase || c.claseId;
+                        if (!id) return Promise.resolve({ success: false });
+                        return PersonasService.getAlumnosPorClase(id);
+                    });
+
+                    const results = await Promise.all(promises);
+                    const uniqueIds = new Set();
+
+                    results.forEach(r => {
+                        if (!r || !r.success) return;
+                        const payload = r.data || {};
+                        // Compatibilidad con distintas formas de retorno
+                        const alumnosArray = Array.isArray(payload) ? payload : (payload.alumnos || payload.items || payload.data || []);
+                        if (Array.isArray(alumnosArray)) {
+                            alumnosArray.forEach(a => {
+                                const aid = a.id || a.alumno_id || a.alumnoId || null;
+                                if (aid != null) uniqueIds.add(String(aid));
+                                else if (typeof a === 'string' || typeof a === 'number') uniqueIds.add(String(a));
+                            });
+                        }
+                    });
+
+                    if (uniqueIds.size > 0) {
+                        totalAlumnos = uniqueIds.size;
+                    }
+                } catch (e) {
+                    console.warn('[DocenteDashboard] Error fetching alumnos por clase:', e);
+                }
+            }
+
+            if (totalAlumnos > 0) {
+                document.getElementById('docenteTotalAlumnos').textContent = totalAlumnos;
+            } else {
+                // Intentar pedir métricas específicas al servicio de Notas como fallback
+                try {
+                    const dash = await NotasService.getDashboardDocente();
+                    if (dash.success) {
+                        const t = dash.data.total_alumnos || dash.data.total_students || dash.data.total || null;
+                        document.getElementById('docenteTotalAlumnos').textContent = t != null ? t : '0';
+                    } else {
+                        document.getElementById('docenteTotalAlumnos').textContent = '0';
+                    }
+                } catch (e) {
+                    document.getElementById('docenteTotalAlumnos').textContent = '0';
+                }
+            }
+        } else {
+            // Si falla, setear counts a 0 para evitar vacío en UI
+            try {
+                document.getElementById('docenteTotalClases').textContent = '0';
+                document.getElementById('docenteTotalAlumnos').textContent = '0';
+            } catch (e) {}
+        }
+    } catch (error) {
+        console.error('Error loading docente dashboard:', error);
+    }
 }
 
 /**
@@ -477,7 +697,14 @@ async function loadHijosResumen() {
         }
 
         const hijos = result.data.hijos || result.data || [];
-        
+
+        // Ordenar hijos por apellidos para consistencia con otras vistas
+        hijos.sort((a, b) => {
+            const aName = (a.apellidos || a.apellido_paterno || '').toString().trim();
+            const bName = (b.apellidos || b.apellido_paterno || '').toString().trim();
+            return aName.localeCompare(bName, 'es');
+        });
+
         if (hijos.length === 0) {
             hijosListado.innerHTML = `
                 <div class="text-center py-4">
@@ -508,7 +735,7 @@ async function loadHijosResumen() {
                                         </span>
                                     </div>
                                     <div class="text-end">
-                                        <span class="badge bg-info mb-2">${hijo.tipo_relacion || 'HIJO/A'}</span>
+                                        <span class="badge bg-info mb-2">${(hijo.tipo_relacion || 'HIJO/A').toString().toUpperCase()}</span>
                                         <br>
                                         <button class="btn btn-outline-primary btn-sm" 
                                                 onclick="verNotasHijo('${hijo.id}')">
@@ -552,17 +779,31 @@ async function loadNotifications() {
     if (currentRole !== 'PADRE') return;
 
     const result = await NotasService.getAlertas(0, 10);
-    if (result.success) {
-        const alertasNoLeidas = result.data.alertas?.filter(a => !a.leida) || [];
-        const count = alertasNoLeidas.length;
+    try {
+        if (result.success) {
+            const alertasNoLeidas = result.data.alertas?.filter(a => !a.leida) || [];
+            const count = alertasNoLeidas.length;
 
-        const badge = document.getElementById('notificationCount');
-        if (count > 0) {
-            badge.textContent = count;
-            badge.style.display = 'inline-block';
-        } else {
-            badge.style.display = 'none';
+            const wrapper = document.getElementById('notificationWrapper');
+            const badge = document.getElementById('notificationCount');
+
+            // Si existe el wrapper, mostrarlo (se oculta por defecto en el HTML)
+            if (wrapper) wrapper.style.display = 'flex';
+
+            if (!badge) {
+                console.warn('[Notifications] Element with id "notificationCount" not found in DOM. Skipping badge update.');
+                return;
+            }
+
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
         }
+    } catch (e) {
+        console.error('Error updating notifications badge:', e);
     }
 }
 

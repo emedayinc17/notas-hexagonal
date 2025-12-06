@@ -2,11 +2,12 @@
 // GESTIÓN DE CURSOS
 // ============================================
 
-let cursos = [];
+let cursos = []; // Todos los cursos cargados
+let filteredCursos = []; // Cursos filtrados
 let currentPage = 1;
-const itemsPerPage = 10;
+let itemsPerPage = 10;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Verificar autenticación y rol ADMIN
     if (!requireAuth()) return;
     if (!requireRole('ADMIN')) {
@@ -15,26 +16,33 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // Cargar configuración
+    if (typeof AppSettings !== 'undefined') {
+        itemsPerPage = AppSettings.getSetting('pagination.itemsPerPage', 10);
+    }
+
     // Cargar datos del usuario en navbar
     loadUserInfo();
-    
+
     // Cargar menú del sidebar
     loadSidebarMenu();
-    
+
     // Cargar cursos
     loadCursos();
 
     // Event listeners
     document.getElementById('formCurso').addEventListener('submit', handleSubmitCurso);
-    document.getElementById('searchInput').addEventListener('input', debounce(loadCursos, 500));
-    document.getElementById('filterEstado').addEventListener('change', loadCursos);
+    document.getElementById('searchInput').addEventListener('input', debounce(() => { currentPage = 1; applyFilters(); }, 300));
+    document.getElementById('filterEstado').addEventListener('change', () => { currentPage = 1; applyFilters(); });
     document.getElementById('sidebarCollapse').addEventListener('click', toggleSidebar);
 
     // Reset form when modal closes
-    document.getElementById('modalCurso').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('modalCurso').addEventListener('hidden.bs.modal', function () {
         document.getElementById('formCurso').reset();
         document.getElementById('cursoId').value = '';
         document.getElementById('modalCursoTitle').textContent = 'Nuevo Curso';
+        document.getElementById('divCursoEstado').classList.add('d-none');
+        document.getElementById('cursoEstado').value = 'ACTIVO';
     });
 });
 
@@ -47,10 +55,10 @@ function loadUserInfo() {
         const userNameEl = document.getElementById('userName');
         const userRoleEl = document.getElementById('userRole');
         const userInitialsEl = document.getElementById('userInitials');
-        
+
         if (userNameEl) userNameEl.textContent = user.username;
         if (userInitialsEl) userInitialsEl.textContent = getInitials(user.username);
-        
+
         // Aplicar clase de badge según rol
         if (userRoleEl) {
             const role = user.rol?.nombre;
@@ -76,8 +84,7 @@ function loadSidebarMenu() {
         { page: 'clases.html', label: 'Clases', icon: 'door-open-fill' },
         { page: 'alumnos.html', label: 'Alumnos', icon: 'people-fill' },
         { page: 'matriculas.html', label: 'Matrículas', icon: 'journal-check' },
-        { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear' },
-        { page: 'notas.html', label: 'Notas', icon: 'clipboard-check' }
+        { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear' }
     ];
 
     const sidebarMenu = document.getElementById('sidebarMenu');
@@ -95,9 +102,6 @@ function loadSidebarMenu() {
  * Carga los cursos desde el API
  */
 async function loadCursos() {
-    const searchTerm = document.getElementById('searchInput').value;
-    const estado = document.getElementById('filterEstado').value;
-
     const tbody = document.getElementById('cursosTableBody');
     tbody.innerHTML = `
         <tr>
@@ -110,38 +114,12 @@ async function loadCursos() {
     `;
 
     try {
-        const result = await AcademicoService.listCursos(0, 100);
-        
+        // Cargar todos (limit alto) para paginación en cliente
+        const result = await AcademicoService.listCursos(0, 1000);
+
         if (result.success) {
             cursos = result.data.cursos || result.data;
-            
-            // Aplicar filtros
-            let filteredCursos = cursos.filter(c => {
-                let match = true;
-                
-                if (searchTerm) {
-                    const searchLower = searchTerm.toLowerCase();
-                    match = match && (
-                        c.nombre.toLowerCase().includes(searchLower) ||
-                        c.codigo.toLowerCase().includes(searchLower)
-                    );
-                }
-                
-                if (estado) {
-                    match = match && c.status === estado;
-                }
-                
-                return match;
-            });
-
-            // Ordenar por nombre
-            filteredCursos.sort((a, b) => {
-                const nombreA = a.nombre || '';
-                const nombreB = b.nombre || '';
-                return nombreA.localeCompare(nombreB);
-            });
-
-            displayCursos(filteredCursos);
+            applyFilters();
         } else {
             throw new Error(result.error);
         }
@@ -160,12 +138,48 @@ async function loadCursos() {
 }
 
 /**
- * Muestra los cursos en la tabla
+ * Aplica filtros y paginación
  */
-function displayCursos(cursosToDisplay) {
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const estado = document.getElementById('filterEstado').value;
+
+    // Filtrar
+    filteredCursos = cursos.filter(c => {
+        let match = true;
+
+        if (searchTerm) {
+            match = match && (
+                c.nombre.toLowerCase().includes(searchTerm) ||
+                c.codigo.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        if (estado) {
+            match = match && c.status === estado;
+        }
+
+        return match;
+    });
+
+    // Ordenar por nombre
+    filteredCursos.sort((a, b) => {
+        const nombreA = a.nombre || '';
+        const nombreB = b.nombre || '';
+        return nombreA.localeCompare(nombreB);
+    });
+
+    renderTable();
+    renderPagination();
+}
+
+/**
+ * Renderiza la tabla con la página actual
+ */
+function renderTable() {
     const tbody = document.getElementById('cursosTableBody');
-    
-    if (cursosToDisplay.length === 0) {
+
+    if (filteredCursos.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="text-center py-4 text-muted">
@@ -177,7 +191,12 @@ function displayCursos(cursosToDisplay) {
         return;
     }
 
-    tbody.innerHTML = cursosToDisplay.map(curso => `
+    // Paginación
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageData = filteredCursos.slice(start, end);
+
+    tbody.innerHTML = pageData.map(curso => `
         <tr>
             <td><span class="badge bg-dark">${curso.codigo}</span></td>
             <td class="fw-bold">${curso.nombre}</td>
@@ -205,6 +224,84 @@ function displayCursos(cursosToDisplay) {
 }
 
 /**
+ * Renderiza la paginación
+ */
+function renderPagination() {
+    let container = document.getElementById('pagination');
+    const table = document.getElementById('cursosTableBody');
+
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'pagination';
+        container.className = 'd-flex justify-content-between align-items-center mt-3';
+        const tableElem = table.closest('table') || table.parentElement;
+        tableElem.parentNode.insertBefore(container, tableElem.nextSibling);
+    }
+
+    const total = filteredCursos.length;
+    const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
+
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    container.innerHTML = '';
+
+    // Lado izquierdo: Botones y Texto
+    const left = document.createElement('div');
+    left.className = 'pagination-left';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'btn btn-sm btn-outline-primary me-2';
+    prevBtn.textContent = '« Prev';
+    prevBtn.disabled = currentPage <= 1;
+    prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderTable(); renderPagination(); } };
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn btn-sm btn-outline-primary ms-2';
+    nextBtn.textContent = 'Next »';
+    nextBtn.disabled = currentPage >= totalPages;
+    nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderTable(); renderPagination(); } };
+
+    const pageInfo = document.createElement('span');
+    pageInfo.className = 'mx-2 text-muted';
+    pageInfo.textContent = `Página ${currentPage} de ${totalPages} • ${total} registros`;
+
+    left.appendChild(prevBtn);
+    left.appendChild(pageInfo);
+    left.appendChild(nextBtn);
+
+    // Lado derecho: Selector de tamaño
+    const right = document.createElement('div');
+    right.className = 'pagination-right d-flex align-items-center';
+
+    const label = document.createElement('small');
+    label.className = 'me-2 text-muted';
+    label.textContent = 'Tamaño:';
+
+    const select = document.createElement('select');
+    select.className = 'form-select form-select-sm';
+    select.style.width = 'auto';
+    [10, 15, 20, 50].forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = `${n}`;
+        if (n === Number(itemsPerPage)) opt.selected = true;
+        select.appendChild(opt);
+    });
+    select.onchange = function() {
+        itemsPerPage = Number(this.value);
+        currentPage = 1;
+        renderTable();
+        renderPagination();
+    };
+
+    right.appendChild(label);
+    right.appendChild(select);
+
+    container.appendChild(left);
+    container.appendChild(right);
+}
+
+/**
  * Maneja el submit del formulario de curso
  */
 async function handleSubmitCurso(e) {
@@ -218,6 +315,11 @@ async function handleSubmitCurso(e) {
         horas_semanales: parseInt(document.getElementById('cursoHorasSemanales').value) || null
     };
 
+    // Si es edición, incluir el estado
+    if (cursoId) {
+        cursoData.status = document.getElementById('cursoEstado').value;
+    }
+
     // Validaciones
     if (!cursoData.codigo || !cursoData.nombre) {
         showToast('Error', 'Por favor completa todos los campos requeridos', 'error');
@@ -225,17 +327,17 @@ async function handleSubmitCurso(e) {
     }
 
     try {
-        const result = cursoId 
+        const result = cursoId
             ? await AcademicoService.updateCurso(cursoId, cursoData)
             : await AcademicoService.createCurso(cursoData);
 
         if (result.success) {
             showToast('Éxito', cursoId ? 'Curso actualizado correctamente' : 'Curso creado correctamente', 'success');
-            
+
             // Cerrar modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalCurso'));
             modal.hide();
-            
+
             // Recargar tabla
             await loadCursos();
         } else {
@@ -263,10 +365,14 @@ function editCurso(id) {
     document.getElementById('cursoNombre').value = curso.nombre;
     document.getElementById('cursoDescripcion').value = curso.descripcion || '';
     document.getElementById('cursoHorasSemanales').value = curso.horas_semanales || '';
-    
+
+    // Mostrar y establecer estado
+    document.getElementById('divCursoEstado').classList.remove('d-none');
+    document.getElementById('cursoEstado').value = curso.status || 'ACTIVO';
+
     // Cambiar título del modal
     document.getElementById('modalCursoTitle').textContent = 'Editar Curso';
-    
+
     // Abrir modal
     const modal = new bootstrap.Modal(document.getElementById('modalCurso'));
     modal.show();
@@ -289,7 +395,7 @@ async function deleteCurso(id) {
     try {
         // Soft delete
         const result = await AcademicoService.deleteCurso(id);
-        
+
         if (result.success) {
             showToast('Éxito', 'Curso eliminado correctamente', 'success');
             await loadCursos();

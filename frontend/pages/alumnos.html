@@ -1,19 +1,16 @@
-<!DOCTYPE html>
+++<!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alumnos - Sistema de Gestión Académica</title>
-
-    <!-- Bootstrap 5.3 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../css/styles.css">
 </head>
-
 <body>
     <div class="wrapper">
         <!-- Sidebar -->
@@ -39,7 +36,7 @@
 
         <!-- Page Content -->
         <div id="content">
-            <!-- Top navbar -->
+            <!-- Navbar -->
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
                 <div class="container-fluid">
                     <button type="button" id="sidebarCollapse" class="btn btn-outline-secondary">
@@ -47,6 +44,10 @@
                     </button>
 
                     <div class="ms-auto d-flex align-items-center">
+                        <div id="notificationWrapper" class="notification-badge me-3" style="display:none; align-items:center;">
+                            <i class="bi bi-bell fs-5"></i>
+                            <span id="notificationCount" class="badge bg-danger" style="display:none"></span>
+                        </div>
                         <div class="user-info me-3">
                             <span class="fw-bold" id="userName"></span>
                             <small class="text-muted d-block" id="userRole"></small>
@@ -64,6 +65,7 @@
                             <i class="bi bi-people-fill me-2 text-primary"></i>
                             Gestión de Alumnos
                         </h2>
+                        <p class="text-muted mb-0">Administra los alumnos del instituto</p>
                     </div>
                     <div class="col-auto">
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAlumno">
@@ -73,55 +75,50 @@
                 </div>
 
                 <!-- Filters -->
-                <div class="card shadow-sm mb-4">
+                <div class="card mb-4">
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label class="form-label">Buscar</label>
-                                <input type="text" class="form-control" id="searchInput"
-                                    placeholder="Buscar por código, nombre o DNI...">
+                                <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre, código o DNI...">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Género</label>
                                 <select class="form-select" id="filterGenero">
-                                    <option value="">Todos</option>
-                                    <option value="M">Masculino</option>
-                                    <option value="F">Femenino</option>
+                                    <option value="">Todos los géneros</option>
+                                    <option value="M">M</option>
+                                    <option value="F">F</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Grado</label>
                                 <select class="form-select" id="filterGrado">
                                     <option value="">Todos los grados</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label">Estado</label>
                                 <select class="form-select" id="filterEstado">
-                                    <option value="">Todos</option>
-                                    <option value="ACTIVO">Activo</option>
-                                    <option value="INACTIVO">Inactivo</option>
+                                    <option value="">Todos los estados</option>
+                                    <option value="ACTIVO">ACTIVO</option>
+                                    <option value="INACTIVO">INACTIVO</option>
                                 </select>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Table -->
-                <div class="card shadow-sm">
-                    <div class="card-body">
+                <!-- Tabla de alumnos -->
+                <div class="card">
+                    <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle">
+                            <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Código</th>
-                                        <th>Apellidos y Nombres</th>
+                                        <th>Alumno</th>
                                         <th>DNI</th>
                                         <th>Fecha Nac.</th>
                                         <th>Género</th>
                                         <th>Email</th>
                                         <th>Estado</th>
-                                        <th width="120">Acciones</th>
+                                        <th class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="alumnosTableBody">
@@ -135,13 +132,10 @@
                                 </tbody>
                             </table>
                         </div>
-                        <!-- Pagination -->
-                        <nav aria-label="Paginación" class="mt-3">
-                            <ul class="pagination justify-content-center" id="pagination">
-                            </ul>
-                        </nav>
                     </div>
                 </div>
+
+                <div id="pagination" class="d-flex justify-content-between align-items-center mt-3"></div>
             </div>
         </div>
     </div>
@@ -154,215 +148,166 @@
                     <h5 class="modal-title" id="modalAlumnoTitle">Nuevo Alumno</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <form id="formAlumno">
+                <form id="formAlumno">
+                    <div class="modal-body">
                         <input type="hidden" id="alumnoId">
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="alumnoCodigo" class="form-label">Código <span
-                                        class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="alumnoCodigo" placeholder="Ej: ALU2024001"
-                                    required>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Código</label>
+                                <input type="text" class="form-control" id="alumnoCodigo" readonly>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="alumnoDni" class="form-label">DNI <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="alumnoDni" placeholder="8 dígitos"
-                                    maxlength="8" pattern="[0-9]{8}" required>
+                            <div class="col-md-4">
+                                <label class="form-label">DNI</label>
+                                <input type="text" class="form-control" id="alumnoDni" maxlength="8" required>
                             </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="alumnoNombres" class="form-label">Nombres <span
-                                        class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="alumnoNombres"
-                                    placeholder="Nombres del alumno" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="alumnoApellidos" class="form-label">Apellidos <span
-                                        class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="alumnoApellidos"
-                                    placeholder="Apellidos del alumno" required>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="alumnoFechaNacimiento" class="form-label">Fecha Nacimiento <span
-                                        class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="alumnoFechaNacimiento" required>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="alumnoGenero" class="form-label">Género <span
-                                        class="text-danger">*</span></label>
+                            <div class="col-md-4">
+                                <label class="form-label">Género</label>
                                 <select class="form-select" id="alumnoGenero" required>
-                                    <option value="">Seleccionar...</option>
-                                    <option value="M">Masculino</option>
-                                    <option value="F">Femenino</option>
+                                    <option value="">Seleccionar</option>
+                                    <option value="M">M</option>
+                                    <option value="F">F</option>
                                 </select>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="alumnoCelular" class="form-label">Celular</label>
-                                <input type="text" class="form-control" id="alumnoCelular" placeholder="9 dígitos"
-                                    maxlength="9" pattern="[0-9]{9}">
+                        </div>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombres</label>
+                                <input type="text" class="form-control" id="alumnoNombres" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Apellidos</label>
+                                <input type="text" class="form-control" id="alumnoApellidos" required>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="alumnoEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="alumnoEmail" placeholder="correo@ejemplo.com">
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha de Nacimiento</label>
+                                <input type="date" class="form-control" id="alumnoFechaNacimiento" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Celular</label>
+                                <input type="text" class="form-control" id="alumnoCelular" maxlength="9">
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="alumnoDireccion" class="form-label">Dirección</label>
-                            <textarea class="form-control" id="alumnoDireccion" rows="2"
-                                placeholder="Dirección completa"></textarea>
+                        <div class="mt-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="alumnoEmail">
                         </div>
 
-                        <div class="alert alert-info small mb-3">
-                            <i class="bi bi-info-circle me-2"></i>
-                            <strong>Nota:</strong> El código del alumno debe ser único. Se sugiere usar el formato ALU +
-                            AÑO + NÚMERO.
+                        <div class="mt-3">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" class="form-control" id="alumnoDireccion">
                         </div>
-
-                        <div class="d-flex justify-content-end gap-2">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save me-2"></i>Guardar
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Modal Familiares -->
+    <!-- Modal Familiares (simplificado, utilizado por alumnos.js) -->
     <div class="modal fade" id="modalFamiliares" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Gestionar Familiares</h5>
+                    <h5 class="modal-title">Familiares</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="familiaresAlumnoId">
-
-                    <!-- Lista de Familiares Actuales -->
-                    <h6 class="mb-3">Familiares Asociados</h6>
-                    <div class="table-responsive mb-4">
-                        <table class="table table-sm table-bordered">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>DNI</th>
-                                    <th>Relación</th>
-                                    <th>Principal</th>
-                                    <th width="100">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="familiaresTableBody">
-                                <!-- Cargado dinámicamente -->
-                            </tbody>
+                    <div class="mb-3">
+                        <label class="form-label">Buscar Padre por DNI</label>
+                        <div class="input-group">
+                            <input type="text" id="buscarPadreDni" class="form-control" maxlength="8">
+                            <button class="btn btn-outline-secondary" id="btnBuscarPadre">Buscar</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead><tr><th>Nombre</th><th>DNI</th><th>Relación</th><th>Principal</th><th></th></tr></thead>
+                            <tbody id="familiaresTableBody"></tbody>
                         </table>
                     </div>
 
-                    <hr>
-
-                    <!-- Agregar Nuevo Familiar -->
-                    <h6 class="mb-3">Agregar Familiar</h6>
-                    <form id="formAgregarFamiliar" class="row g-3 align-items-end">
-                        <div class="col-md-8 position-relative">
-                            <label class="form-label">Buscar Padre/Madre por DNI</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="buscarPadreDni"
-                                    placeholder="Ingrese DNI (8 dígitos)" maxlength="8">
-                                <button class="btn btn-outline-secondary" type="button" id="btnBuscarPadre">
-                                    <i class="bi bi-search"></i> Buscar
-                                </button>
-                            </div>
-
-                            <!-- Información del padre encontrado -->
-                            <div id="padreEncontradoInfo" class="alert alert-success mt-2 d-none small">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <i class="bi bi-check-circle me-2"></i>
-                                        <strong id="nombrePadreEncontrado"></strong>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="esPrincipal">
-                                        <label class="form-check-label" for="esPrincipal">Contacto principal</label>
-                                    </div>
+                    <!-- Resultado búsqueda: padre encontrado -->
+                    <div id="padreEncontradoInfo" class="d-none mt-3">
+                        <input type="hidden" id="padreEncontradoId">
+                        <div class="card card-body p-2">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <strong id="nombrePadreEncontrado"></strong>
+                                    <div class="small text-muted" id="dniPadreEncontrado"></div>
                                 </div>
                             </div>
 
-                            <!-- Formulario para registrar nuevo padre -->
-                            <div id="padreNoEncontradoInfo" class="alert alert-warning mt-2 d-none">
-                                <h6 class="alert-heading">
-                                    <i class="bi bi-person-plus me-2"></i>Padre/Madre no encontrado
-                                </h6>
-                                <p class="mb-2 small">Complete los datos para registrar:</p>
-
-                                <form id="formRegistrarPadre" onsubmit="registrarNuevoPadre(event)">
-                                    <div class="row g-2">
-                                        <div class="col-md-6">
-                                            <input type="text" class="form-control form-control-sm"
-                                                id="nombresPadreNuevo" placeholder="Nombres *" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <input type="text" class="form-control form-control-sm"
-                                                id="apellidoPaternoPadreNuevo" placeholder="Apellido Paterno *"
-                                                required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <input type="text" class="form-control form-control-sm"
-                                                id="apellidoMaternoPadreNuevo" placeholder="Apellido Materno">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <input type="text" class="form-control form-control-sm" id="dniPadreNuevo"
-                                                placeholder="DNI *" maxlength="8" readonly>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <input type="email" class="form-control form-control-sm"
-                                                id="emailPadreNuevo" placeholder="Email *" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <input type="text" class="form-control form-control-sm"
-                                                id="celularPadreNuevo" placeholder="Celular" maxlength="9">
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="d-flex gap-2 justify-content-end mt-2">
-                                                <button type="button" class="btn btn-sm btn-secondary"
-                                                    onclick="cancelarRegistroPadre()">
-                                                    Cancelar
-                                                </button>
-                                                <button type="submit" class="btn btn-sm btn-success">
-                                                    <i class="bi bi-save me-1"></i>Registrar Padre/Madre
-                                                </button>
-                                            </div>
-                                        </div>
+                            <form id="formAgregarFamiliar" class="row g-2 mt-3">
+                                <div class="col-md-6">
+                                    <select id="nuevaRelacion" class="form-select">
+                                        <option value="PADRE">Padre</option>
+                                        <option value="MADRE">Madre</option>
+                                        <option value="TUTOR">Tutor</option>
+                                        <option value="OTRO">Otro</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-center">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="esPrincipal">
+                                        <label class="form-check-label small" for="esPrincipal">Contacto principal</label>
                                     </div>
-                                </form>
-                            </div>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-center">
+                                    <button id="btnAgregarRelacion" class="btn btn-primary w-100" disabled>Agregar</button>
+                                </div>
+                            </form>
                         </div>
-                        <div class="col-md-4 d-flex flex-column align-items-end">
-                            <label class="form-label">Tipo Relación</label>
-                            <select class="form-select mb-2" id="nuevaRelacion" required>
-                                <option value="PADRE">Padre</option>
-                                <option value="MADRE">Madre</option>
-                                <option value="TUTOR">Tutor</option>
-                                <option value="APODERADO">Apoderado</option>
-                            </select>
-                            <button id="btnAgregarRelacion" class="btn btn-primary" type="submit" disabled>
-                                <i class="bi bi-plus-lg me-1"></i>Agregar
-                            </button>
+                    </div>
+
+                    <!-- Resultado: padre no encontrado -> registrar nuevo padre -->
+                    <div id="padreNoEncontradoInfo" class="d-none mt-3">
+                        <div class="card card-body">
+                            <form id="formRegistrarPadre">
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Nombres</label>
+                                        <input type="text" id="nombresPadreNuevo" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Apellido Paterno</label>
+                                        <input type="text" id="apellidoPaternoPadreNuevo" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Apellido Materno</label>
+                                        <input type="text" id="apellidoMaternoPadreNuevo" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">DNI</label>
+                                        <input type="text" id="dniPadreNuevo" class="form-control" maxlength="8">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" id="emailPadreNuevo" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Celular</label>
+                                        <input type="text" id="celularPadreNuevo" class="form-control" maxlength="9">
+                                    </div>
+                                    <div class="col-12 d-flex gap-2 justify-content-end mt-2">
+                                        <button type="button" class="btn btn-secondary" onclick="cancelarRegistroPadre()">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary">Registrar padre</button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
-                    </form>
-                    <input type="hidden" id="padreEncontradoId">
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -379,6 +324,6 @@
     <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/alumnos.js"></script>
+    <script src="../js/dashboard.js"></script>
 </body>
-
 </html>

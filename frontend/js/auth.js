@@ -16,36 +16,91 @@ const USER_KEY = AUTH_CONFIG.USER_KEY;
  * Guarda el token de autenticación
  */
 function saveAuthToken(token) {
-    localStorage.setItem(AUTH_KEY, token);
+    // Guardar en memoria como fallback (por si el navegador bloquea storage)
+    try {
+        localStorage.setItem(AUTH_KEY, token);
+    } catch (e) {
+        console.warn('[AUTH] localStorage inaccesible, usando fallback en memoria');
+    }
+    try { window.__AUTH_TOKEN = token; } catch (e) { }
+    // Guardar cookie como fallback para navegadores con Tracking Prevention
+    try { setCookie(AUTH_KEY, token, AUTH_CONFIG.TOKEN_EXPIRY_HOURS); } catch (e) { }
+}
+
+// Helper: set cookie (simple, dev-only usage)
+function setCookie(name, value, hours) {
+    try {
+        const d = new Date();
+        d.setTime(d.getTime() + (hours || AUTH_CONFIG.TOKEN_EXPIRY_HOURS) * 60 * 60 * 1000);
+        const expires = "expires=" + d.toUTCString();
+        document.cookie = name + "=" + encodeURIComponent(value) + "; " + expires + "; path=/";
+    } catch (e) { }
+}
+
+function getCookie(name) {
+    try {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+        }
+    } catch (e) { }
+    return null;
 }
 
 /**
  * Obtiene el token de autenticación
  */
 function getAuthToken() {
-    return localStorage.getItem(AUTH_KEY);
+    // Intentar leer de storage, si falla usar fallback en memoria
+    try {
+        const t = localStorage.getItem(AUTH_KEY);
+        if (t) return t;
+    } catch (e) {
+        console.warn('[AUTH] Lectura de localStorage falló, usando fallback si existe');
+    }
+    try {
+        // Intentar cookie antes del fallback en memoria
+        const c = getCookie(AUTH_KEY);
+        if (c) return c;
+    } catch (e) { }
+    try { return window.__AUTH_TOKEN || null; } catch (e) { return null; }
 }
 
 /**
  * Guarda los datos del usuario
  */
 function saveUserData(userData) {
-    localStorage.setItem(USER_KEY, JSON.stringify(userData));
+    try {
+        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+    } catch (e) {
+        console.warn('[AUTH] No se pudo guardar userData en localStorage');
+        try { window.__USER_DATA = userData; } catch (e) { }
+    }
 }
 
 /**
  * Obtiene los datos del usuario
  */
 function getUserData() {
-    const data = localStorage.getItem(USER_KEY);
-    return data ? JSON.parse(data) : null;
+    try {
+        const data = localStorage.getItem(USER_KEY);
+        if (data) return JSON.parse(data);
+    } catch (e) {
+        try { return window.__USER_DATA || null; } catch (e) { return null; }
+    }
+    try { return window.__USER_DATA || null; } catch (e) { return null; }
 }
 
 /**
  * Verifica si el usuario está autenticado
  */
 function isAuthenticated() {
-    return getAuthToken() !== null;
+    const token = getAuthToken();
+    if (!token) return false;
+    return !isTokenExpired();
 }
 
 /**
@@ -54,6 +109,8 @@ function isAuthenticated() {
 function logout() {
     localStorage.removeItem(AUTH_KEY);
     localStorage.removeItem(USER_KEY);
+    // Borrar cookie también
+    document.cookie = `${AUTH_KEY}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
     window.location.href = '/';
 }
 
@@ -85,7 +142,7 @@ function hasAnyRole(roles) {
  */
 function requireAuth() {
     if (!isAuthenticated()) {
-        window.location.href = '/frontend/index.html';
+        window.location.href = '/index.html';
         return false;
     }
     return true;
@@ -96,12 +153,15 @@ function requireAuth() {
  */
 function requireRole(allowedRoles) {
     if (!requireAuth()) return false;
-    
+
+    // Aceptar tanto string como array
+    if (typeof allowedRoles === 'string') allowedRoles = [allowedRoles];
+
     const userRole = getUserRole();
-    if (!allowedRoles.includes(userRole)) {
+    if (!Array.isArray(allowedRoles) || !allowedRoles.includes(userRole)) {
         showToast('No tienes permisos para acceder a esta página', 'danger');
         setTimeout(() => {
-            window.location.href = '/frontend/pages/dashboard.html';
+            window.location.href = '/pages/dashboard.html';
         }, 2000);
         return false;
     }
@@ -113,10 +173,16 @@ function requireRole(allowedRoles) {
  */
 function getAuthHeaders() {
     const token = getAuthToken();
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : ''
+    const headers = {
+        'Content-Type': 'application/json'
     };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    } else {
+        // No token disponible — log para debugging (temporal)
+        console.warn('[AUTH] getAuthHeaders: no token disponible');
+    }
+    return headers;
 }
 
 /**

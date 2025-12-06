@@ -58,7 +58,11 @@ class RegistrarNotaUseCase:
         valor_numerico: float = None,
         peso: float = None,
         observaciones: str = None,
+        columna_nota: str = "N1",
         auth_token: str = None,
+        # Argumentos opcionales para optimización (cache)
+        matricula_info_cache: dict = None,
+        umbral_cache: dict = None,
     ) -> dict:
         # Validaciones
         if not valor_literal and valor_numerico is None:
@@ -75,30 +79,42 @@ class RegistrarNotaUseCase:
             valor_numerico=valor_numerico,
             peso=peso,
             observaciones=observaciones,
+            columna_nota=columna_nota,
             fecha_registro=dt_date.today(),
             registrado_por_user_id=registrado_por_user_id,
         )
         
         nota_creada = self.nota_repository.create(nueva_nota)
+        # Log simple para depuración: confirmar creación/actualización en stdout
+        try:
+            print(f"[DEBUG NOTA] nota creada/actualizada id={nota_creada.id} matricula_clase_id={nota_creada.matricula_clase_id} valor_numerico={nota_creada.valor_numerico}")
+        except Exception:
+            pass
         
         # Evaluar umbrales y generar alertas
         alerta_generada = False
         alertas_enviadas = 0
         
         # Obtener información de matrícula (alumno_id, clase_id)
-        matricula_info = await self.personas_client.get_matricula_info(
-            matricula_clase_id, 
-            auth_token
-        )
+        if matricula_info_cache:
+            matricula_info = matricula_info_cache
+        else:
+            matricula_info = await self.personas_client.get_matricula_info(
+                matricula_clase_id, 
+                auth_token
+            )
         
         if matricula_info and matricula_info.get("alumno_id"):
             alumno_id = matricula_info["alumno_id"]
             
             # Obtener umbral (podría ser específico del curso/grado o global)
-            umbral = await self.academico_client.get_umbral_alerta(
-                escala_id=escala_id,
-                token=auth_token
-            )
+            if umbral_cache:
+                umbral = umbral_cache
+            else:
+                umbral = await self.academico_client.get_umbral_alerta(
+                    escala_id=escala_id,
+                    token=auth_token
+                )
             
             # Verificar si la nota está por debajo del umbral
             if umbral and self._nota_por_debajo_umbral(nota_creada, umbral):

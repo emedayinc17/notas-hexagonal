@@ -3,6 +3,9 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from app.domain import *
 from .models import *
+from sqlalchemy.exc import IntegrityError
+from datetime import date as dt_date
+from sqlalchemy.dialects.mysql import insert as mysql_insert
 
 
 def nota_model_to_domain(model: NotaModel) -> Nota:
@@ -18,6 +21,7 @@ def nota_model_to_domain(model: NotaModel) -> Nota:
         valor_numerico=model.valor_numerico,
         peso=model.peso,
         observaciones=model.observaciones,
+        columna_nota=model.columna_nota,
         is_deleted=model.is_deleted,
         created_at=model.created_at,
         updated_at=model.updated_at,
@@ -74,7 +78,9 @@ class SqlAlchemyNotaRepository(NotaRepository):
         self.session = session
     
     def create(self, nota: Nota) -> Nota:
-        model = NotaModel(
+        # Usar INSERT ... ON DUPLICATE KEY UPDATE para evitar rollback por concurrencia
+        table = NotaModel.__table__
+        insert_stmt = mysql_insert(table).values(
             id=nota.id,
             matricula_clase_id=nota.matricula_clase_id,
             tipo_evaluacion_id=nota.tipo_evaluacion_id,
@@ -86,11 +92,44 @@ class SqlAlchemyNotaRepository(NotaRepository):
             valor_numerico=nota.valor_numerico,
             peso=nota.peso,
             observaciones=nota.observaciones,
+            columna_nota=nota.columna_nota,
             is_deleted=nota.is_deleted,
         )
-        self.session.add(model)
-        self.session.commit()
-        self.session.refresh(model)
+
+        update_dict = {
+            'valor_literal': insert_stmt.inserted.valor_literal,
+            'valor_numerico': insert_stmt.inserted.valor_numerico,
+            'peso': insert_stmt.inserted.peso,
+            'observaciones': insert_stmt.inserted.observaciones,
+            'registrado_por_user_id': insert_stmt.inserted.registrado_por_user_id,
+            'fecha_registro': insert_stmt.inserted.fecha_registro,
+            'updated_at': func.current_timestamp(),
+            'is_deleted': insert_stmt.inserted.is_deleted,
+        }
+
+        upsert = insert_stmt.on_duplicate_key_update(**update_dict)
+
+        try:
+            self.session.execute(upsert)
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
+
+        # Recuperar la nota final (puede haber sido insertada o actualizada)
+        model = self.session.query(NotaModel).filter(
+            NotaModel.matricula_clase_id == nota.matricula_clase_id,
+            NotaModel.tipo_evaluacion_id == nota.tipo_evaluacion_id,
+            NotaModel.periodo_id == nota.periodo_id,
+            NotaModel.escala_id == nota.escala_id,
+            NotaModel.columna_nota == nota.columna_nota,
+            NotaModel.is_deleted == False,
+        ).order_by(NotaModel.updated_at.desc()).first()
+
+        if not model:
+            # Fallback genérico
+            raise IntegrityError("Upsert failed, row not found after upsert", None, None)
+
         return nota_model_to_domain(model)
     
     def find_by_id(self, nota_id: str) -> Optional[Nota]:

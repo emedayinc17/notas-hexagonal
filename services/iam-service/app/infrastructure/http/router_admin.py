@@ -281,3 +281,56 @@ async def list_users(
             status_code=status_code,
             content={"error": e.code, "message": e.message}
         )
+
+
+class UserIdsRequest(BaseModel):
+    user_ids: list[str]
+
+
+@router.post("/users/bulk")
+async def get_users_bulk(
+    request: UserIdsRequest,
+    authorization: Optional[str] = Header(None),
+    settings = Depends(get_settings),
+):
+    """Obtener usuarios por lista de IDs (interno/admin)"""
+    try:
+        from app.infrastructure.db.models import UsuarioModel
+        from app.main import SessionLocal
+        
+        # Validar token (opcional, pero recomendado)
+        if authorization:
+            token = extract_bearer_token(authorization)
+            decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+
+        if not request.user_ids:
+            return {"users": []}
+
+        db = SessionLocal()
+        try:
+            users = db.query(UsuarioModel).filter(
+                UsuarioModel.id.in_(request.user_ids),
+                UsuarioModel.is_deleted == False
+            ).all()
+            
+            return {
+                "users": [
+                    {
+                        "id": u.id,
+                        "username": u.username,
+                        "nombres": u.nombres,
+                        "apellidos": u.apellidos,
+                        "email": u.email
+                    } for u in users
+                ]
+            }
+        finally:
+            db.close()
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "InternalError", "message": str(e)}
+        )

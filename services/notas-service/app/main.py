@@ -23,9 +23,17 @@ app = FastAPI(
 )
 
 # CORS - Configuración explícita
-cors_origins = settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else ["http://localhost:8080"]
+# Determinar orígenes CORS: en desarrollo habilitamos wildcard para evitar bloqueos desde 127.0.0.1
+if settings.DEBUG:
+    cors_origins = ["*"]
+else:
+    cors_origins = settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else ["http://localhost:8080"]
+
 print(f"✅ Configurando CORS con orígenes: {cors_origins}")
 
+# Si usamos '*' y allow_credentials=True, FastAPI/Starlette solo enviará
+# Access-Control-Allow-Origin='*' para respuestas sin credenciales. En desarrollo
+# esto evita problemas con orígenes como http://127.0.0.1:8080 vs http://localhost:8080
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,

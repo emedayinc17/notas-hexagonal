@@ -26,11 +26,26 @@ app = FastAPI(
 
 # CORS - Configuración explícita
 cors_origins = settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else ["http://localhost:8080"]
-print(f"✅ Configurando CORS con orígenes: {cors_origins}")
+
+# En entorno de desarrollo garantizar que las variantes localhost y 127.0.0.1 estén permitidas
+if isinstance(cors_origins, list):
+    # Si hay un wildcard, dejarlo como tal
+    if "*" in cors_origins:
+        allow_origins = ["*"]
+    else:
+        allow_origins = list(dict.fromkeys(cors_origins))  # unique
+        # Añadir variantes comunes del host de frontend en desarrollo
+        for addition in ["http://localhost:8080", "http://127.0.0.1:8080"]:
+            if addition not in allow_origins:
+                allow_origins.append(addition)
+else:
+    allow_origins = ["http://localhost:8080", "http://127.0.0.1:8080"]
+
+print(f"✅ Configurando CORS con orígenes: {allow_origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

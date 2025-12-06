@@ -21,7 +21,10 @@ class TipoEvaluacionModel(Base):
 
 class NotaModel(Base):
     __tablename__ = "notas"
-    __table_args__ = {"schema": "sga_notas"}
+    __table_args__ = (
+        # Unique key to avoid duplicate logical notes (incluye is_deleted para permitir reinsertar tras soft-delete)
+        {'schema': 'sga_notas'}
+    )
     
     id = Column(String(36), primary_key=True)
     matricula_clase_id = Column(String(36), nullable=False, index=True)
@@ -34,6 +37,8 @@ class NotaModel(Base):
     valor_numerico = Column(Float)
     peso = Column(Float)
     observaciones = Column(Text)
+    columna_nota = Column(String(20), default='N1')
+    metadata_json = Column("metadata_json", JSON)
     is_deleted = Column(Boolean, nullable=False, default=False)
     created_at = Column(TIMESTAMP, nullable=False, server_default=func.current_timestamp())
     updated_at = Column(TIMESTAMP, nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp())

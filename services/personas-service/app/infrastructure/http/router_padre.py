@@ -26,6 +26,8 @@ async def get_mis_hijos(
         
         user_id = payload.get("user_id")
         rol = payload.get("rol_nombre")
+        # El token contiene el email del usuario; usamos email para mapear al padre
+        user_email = payload.get("email") or payload.get("username")
         
         if rol != "PADRE":
             return JSONResponse(
@@ -33,10 +35,16 @@ async def get_mis_hijos(
                 content={"error": "Forbidden", "message": "Solo padres pueden acceder"}
             )
         
-        # Encontrar el padre por user_id
+        # Encontrar el padre por email (no hay campo user_id en PadreModel)
         from app.infrastructure.db.models import PadreModel
+        if not user_email:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"error": "BAD_REQUEST", "message": "Email no disponible en token"}
+            )
+
         padre = db.query(PadreModel).filter(
-            PadreModel.user_id == user_id,
+            PadreModel.email == user_email,
             PadreModel.is_deleted == False
         ).first()
         
@@ -98,6 +106,7 @@ async def get_mi_perfil(
         
         user_id = payload.get("user_id")
         rol = payload.get("rol_nombre")
+        user_email = payload.get("email") or payload.get("username")
         
         if rol != "PADRE":
             return JSONResponse(
@@ -105,10 +114,16 @@ async def get_mi_perfil(
                 content={"error": "Forbidden", "message": "Solo padres pueden acceder"}
             )
         
-        # Encontrar el padre por user_id
+        # Encontrar el padre por email
         from app.infrastructure.db.models import PadreModel
+        if not user_email:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"error": "BAD_REQUEST", "message": "Email no disponible en token"}
+            )
+
         padre = db.query(PadreModel).filter(
-            PadreModel.user_id == user_id,
+            PadreModel.email == user_email,
             PadreModel.is_deleted == False
         ).first()
         

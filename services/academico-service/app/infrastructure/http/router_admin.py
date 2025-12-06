@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
-from shared.common import DomainException, extract_bearer_token, decode_jwt_token
+from shared.common import DomainException, AlreadyExistsException, extract_bearer_token, decode_jwt_token
 from app.infrastructure.http.dependencies import *
 
 
@@ -38,6 +38,7 @@ class UpdateCursoRequest(BaseModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
     horas_semanales: Optional[int] = None
+    status: Optional[str] = None
 
 
 class CreateClaseRequest(BaseModel):
@@ -52,6 +53,7 @@ class UpdateClaseRequest(BaseModel):
     seccion_id: Optional[str] = None
     periodo_id: Optional[str] = None
     docente_user_id: Optional[str] = None
+    status: Optional[str] = None
 
 
 class CreateSeccionRequest(BaseModel):
@@ -66,6 +68,7 @@ class UpdateSeccionRequest(BaseModel):
     nombre: Optional[str] = None
     año_escolar: Optional[int] = None
     capacidad_maxima: Optional[int] = None
+    status: Optional[str] = None
 
 
 class CreatePeriodoTipoRequest(BaseModel):
@@ -90,6 +93,7 @@ class UpdatePeriodoRequest(BaseModel):
     nombre: Optional[str] = None
     fecha_inicio: Optional[date] = None
     fecha_fin: Optional[date] = None
+    status: Optional[str] = None
 
 
 # Endpoints
@@ -145,7 +149,7 @@ async def create_grado(
 async def list_grados(
     nivel: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     from app.infrastructure.db.repositories import SqlAlchemyGradoRepository
@@ -300,6 +304,12 @@ async def create_curso(
             "status": curso.status,
         }
     except DomainException as e:
+        # Map domain-level 'AlreadyExists' to HTTP 409 Conflict
+        if isinstance(e, AlreadyExistsException):
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={"error": "Conflict", "message": e.message}
+            )
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"error": e.code, "message": e.message}
@@ -309,7 +319,7 @@ async def create_curso(
 @router.get("/cursos")
 async def list_cursos(
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     from app.infrastructure.db.repositories import SqlAlchemyCursoRepository
@@ -321,6 +331,8 @@ async def list_cursos(
                 "id": c.id,
                 "codigo": c.codigo,
                 "nombre": c.nombre,
+                "descripcion": c.descripcion,
+                "horas_semanales": c.horas_semanales,
                 "status": c.status,
             } for c in cursos
         ],
@@ -348,7 +360,7 @@ async def update_curso(
             )
         
         from app.infrastructure.db.models import CursoModel
-        curso_model = db.query(CursoModel).filter(CursoModel.id == curso_id, CursoModel.status == "ACTIVO").first()
+        curso_model = db.query(CursoModel).filter(CursoModel.id == curso_id).first()
         
         if not curso_model:
             return JSONResponse(
@@ -364,6 +376,25 @@ async def update_curso(
             curso_model.descripcion = request.descripcion
         if request.horas_semanales is not None:
             curso_model.horas_semanales = request.horas_semanales
+        
+        if request.status is not None:
+            # Si se intenta desactivar, verificar que no esté en uso
+            if request.status == "INACTIVO" and curso_model.status == "ACTIVO":
+                from app.infrastructure.db.models import ClaseModel
+                clases_activas = db.query(ClaseModel).filter(
+                    ClaseModel.curso_id == curso_id,
+                    ClaseModel.status == "ACTIVO"
+                ).count()
+                
+                if clases_activas > 0:
+                    return JSONResponse(
+                        status_code=status.HTTP_409_CONFLICT,
+                        content={
+                            "error": "Conflict", 
+                            "message": f"No se puede desactivar el curso porque tiene {clases_activas} clases activas asociadas."
+                        }
+                    )
+            curso_model.status = request.status
         
         db.commit()
         db.refresh(curso_model)
@@ -412,6 +443,22 @@ async def delete_curso(
                 content={"error": "NotFound", "message": "Curso no encontrado"}
             )
         
+        # Verificar si el curso está en uso antes de eliminar
+        from app.infrastructure.db.models import ClaseModel
+        clases_activas = db.query(ClaseModel).filter(
+            ClaseModel.curso_id == curso_id,
+            ClaseModel.status == "ACTIVO"
+        ).count()
+        
+        if clases_activas > 0:
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={
+                    "error": "Conflict", 
+                    "message": f"No se puede eliminar el curso porque tiene {clases_activas} clases activas asociadas."
+                }
+            )
+        
         curso_model.status = "INACTIVO"
         db.commit()
         
@@ -455,7 +502,7 @@ async def create_seccion(
 async def list_secciones(
     grado_id: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     from app.infrastructure.db.repositories import SqlAlchemySeccionRepository
@@ -496,7 +543,7 @@ async def update_seccion(
             )
         
         from app.infrastructure.db.models import SeccionModel
-        seccion_model = db.query(SeccionModel).filter(SeccionModel.id == seccion_id, SeccionModel.status == "ACTIVO").first()
+        seccion_model = db.query(SeccionModel).filter(SeccionModel.id == seccion_id).first()
         
         if not seccion_model:
             return JSONResponse(
@@ -512,6 +559,25 @@ async def update_seccion(
             seccion_model.año_escolar = request.año_escolar
         if request.capacidad_maxima is not None:
             seccion_model.capacidad_maxima = request.capacidad_maxima
+        
+        if request.status is not None:
+            # Si se intenta desactivar, verificar que no esté en uso (clases activas)
+            if request.status == "INACTIVO" and seccion_model.status == "ACTIVO":
+                from app.infrastructure.db.models import ClaseModel
+                clases_activas = db.query(ClaseModel).filter(
+                    ClaseModel.seccion_id == seccion_id,
+                    ClaseModel.status.in_(["ACTIVO", "ACTIVA"])
+                ).count()
+                
+                if clases_activas > 0:
+                    return JSONResponse(
+                        status_code=status.HTTP_409_CONFLICT,
+                        content={
+                            "error": "Conflict", 
+                            "message": f"No se puede desactivar la sección porque tiene {clases_activas} clases activas asociadas."
+                        }
+                    )
+            seccion_model.status = request.status
         
         db.commit()
         db.refresh(seccion_model)
@@ -560,6 +626,22 @@ async def delete_seccion(
                 content={"error": "NotFound", "message": "Sección no encontrada"}
             )
         
+        # Verificar si la sección está en uso antes de eliminar
+        from app.infrastructure.db.models import ClaseModel
+        clases_activas = db.query(ClaseModel).filter(
+            ClaseModel.seccion_id == seccion_id,
+            ClaseModel.status.in_(["ACTIVO", "ACTIVA"])
+        ).count()
+        
+        if clases_activas > 0:
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={
+                    "error": "Conflict", 
+                    "message": f"No se puede eliminar la sección porque tiene {clases_activas} clases activas asociadas."
+                }
+            )
+        
         seccion_model.status = "INACTIVO"
         db.commit()
         
@@ -592,6 +674,42 @@ async def create_periodo_tipo(
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": "Error", "message": str(e)})
 
 
+
+@router.get("/periodos/tipos")
+async def list_tipos_periodo(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    authorization: Optional[str] = Header(None),
+    settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    try:
+        token = extract_bearer_token(authorization)
+        decode_jwt_token(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        
+        from app.infrastructure.db.models import PeriodoTipoModel
+        
+        tipos = db.query(PeriodoTipoModel).offset(offset).limit(limit).all()
+        
+        return {
+            "tipos_periodo": [
+                {
+                    "id": t.id,
+                    "nombre": t.nombre,
+                    "num_periodos": t.num_periodos,
+                    "descripcion": t.descripcion,
+                    "status": t.status,
+                } for t in tipos
+            ],
+            "total": len(tipos)
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "INTERNAL_ERROR", "message": str(e)}
+        )
+
+
 @router.post("/periodos", status_code=status.HTTP_201_CREATED)
 async def create_periodo(
     request: CreatePeriodoRequest,
@@ -618,27 +736,44 @@ async def create_periodo(
 async def list_periodos(
     año_escolar: Optional[int] = Query(None),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
-    from app.infrastructure.db.repositories import SqlAlchemyPeriodoRepository
-    repo = SqlAlchemyPeriodoRepository(db)
-    periodos = repo.find_all(año_escolar=año_escolar, offset=offset, limit=limit)
-    return {
-        "periodos": [
-            {
+    try:
+        from app.infrastructure.db.models import PeriodoModel, PeriodoTipoModel
+
+        # Left outer join to include tipo_nombre when available without requiring a separate authenticated call
+        query = db.query(PeriodoModel, PeriodoTipoModel).outerjoin(
+            PeriodoTipoModel, PeriodoModel.tipo_id == PeriodoTipoModel.id
+        )
+
+        if año_escolar is not None:
+            query = query.filter(PeriodoModel.año_escolar == año_escolar)
+
+        resultados = query.offset(offset).limit(limit).all()
+
+        periodos_list = []
+        for p, t in resultados:
+            periodos_list.append({
                 "id": p.id,
                 "año_escolar": p.año_escolar,
                 "tipo_id": p.tipo_id,
+                "tipo_nombre": t.nombre if t is not None else None,
                 "numero": p.numero,
                 "nombre": p.nombre,
                 "fecha_inicio": p.fecha_inicio.isoformat() if p.fecha_inicio else None,
                 "fecha_fin": p.fecha_fin.isoformat() if p.fecha_fin else None,
                 "status": p.status,
-            } for p in periodos
-        ],
-        "total": len(periodos),
-    }
+            })
+
+        return {"periodos": periodos_list, "total": len(periodos_list), "offset": offset, "limit": limit}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "INTERNAL_ERROR", "message": str(e)}
+        )
 
 
 @router.put("/periodos/{periodo_id}")
@@ -681,6 +816,24 @@ async def update_periodo(
             periodo_model.fecha_inicio = request.fecha_inicio
         if request.fecha_fin is not None:
             periodo_model.fecha_fin = request.fecha_fin
+        if request.status is not None:
+            if request.status in ["INACTIVO", "CERRADO"] and periodo_model.status == "ACTIVO":
+                # Verificar clases activas
+                from app.infrastructure.db.models import ClaseModel
+                clases_activas = db.query(ClaseModel).filter(
+                    ClaseModel.periodo_id == periodo_id,
+                    ClaseModel.status.in_(["ACTIVO", "ACTIVA"])
+                ).count()
+                
+                if clases_activas > 0:
+                    return JSONResponse(
+                        status_code=status.HTTP_409_CONFLICT,
+                        content={
+                            "error": "Conflict", 
+                            "message": f"No se puede cerrar el periodo porque tiene {clases_activas} clases activas asociadas."
+                        }
+                    )
+            periodo_model.status = request.status
         
         db.commit()
         db.refresh(periodo_model)
@@ -731,6 +884,22 @@ async def delete_periodo(
                 content={"error": "NotFound", "message": "Periodo no encontrado"}
             )
         
+        # Verificar clases activas antes de eliminar (soft delete)
+        from app.infrastructure.db.models import ClaseModel
+        clases_activas = db.query(ClaseModel).filter(
+            ClaseModel.periodo_id == periodo_id,
+            ClaseModel.status.in_(["ACTIVO", "ACTIVA"])
+        ).count()
+        
+        if clases_activas > 0:
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={
+                    "error": "Conflict", 
+                    "message": f"No se puede eliminar el periodo porque tiene {clases_activas} clases activas asociadas."
+                }
+            )
+
         periodo_model.status = "CERRADO"  # ENUM: ACTIVO, CERRADO
         db.commit()
         
@@ -778,6 +947,12 @@ async def create_clase(
             "status": clase.status,
         }
     except DomainException as e:
+        # Map duplicate class creation to 409 Conflict for clearer client handling
+        if isinstance(e, AlreadyExistsException):
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={"error": "Conflict", "message": e.message}
+            )
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"error": e.code, "message": e.message}
@@ -790,7 +965,8 @@ async def list_clases(
     seccion_id: Optional[str] = Query(None),
     periodo_id: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=1000),
+    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
     from app.infrastructure.db.repositories import SqlAlchemyClaseRepository
@@ -802,6 +978,56 @@ async def list_clases(
         offset=offset,
         limit=limit
     )
+    
+    # Enriquecer con conteo de alumnos y datos de docentes (Service-to-Service)
+    clase_ids = [c.id for c in clases]
+    docente_ids = list(set([c.docente_user_id for c in clases if c.docente_user_id]))
+    
+    alumnos_count_map = {}
+    docentes_map = {}
+    
+    if clase_ids:
+        import httpx
+        
+        # 1. Consultar conteo de matriculas en Personas Service
+        try:
+            async with httpx.AsyncClient() as client:
+                # Personas Service (Port 8003)
+                personas_url = "http://localhost:8003/v1/matriculas/counts"
+                # Forward authorization header if available
+                headers = {"Authorization": authorization} if authorization else {}
+                
+                resp = await client.post(personas_url, json={"clase_ids": clase_ids}, headers=headers)
+                if resp.status_code == 200:
+                    alumnos_count_map = resp.json()
+                else:
+                    print(f"Error fetching matriculas counts: {resp.status_code} {resp.text}")
+
+                # 2. Consultar datos de docentes en IAM Service (Port 8001)
+                if docente_ids:
+                    iam_url = "http://localhost:8001/v1/admin/users/bulk"
+                    resp_iam = await client.post(iam_url, json={"user_ids": docente_ids}, headers=headers)
+                    
+                    if resp_iam.status_code == 200:
+                        users_data = resp_iam.json().get("users", [])
+                        for u in users_data:
+                            nombre_completo = f"{u.get('nombres') or ''} {u.get('apellidos') or ''}".strip()
+                            if not nombre_completo:
+                                nombre_completo = u.get('username')
+                            
+                            docentes_map[u['id']] = {
+                                "username": u.get('username'),
+                                "nombre_completo": nombre_completo
+                            }
+                    else:
+                        print(f"Error fetching users bulk: {resp_iam.status_code} {resp_iam.text}")
+                        
+        except Exception as e:
+            # Log error but don't fail the request
+            import traceback, sys
+            print(f"Error enriching clases data (HTTP): {e}", file=sys.stderr)
+            traceback.print_exc()
+
     return {
         "clases": [
             {
@@ -810,10 +1036,39 @@ async def list_clases(
                 "seccion_id": c.seccion_id,
                 "periodo_id": c.periodo_id,
                 "docente_user_id": c.docente_user_id,
+                "docente_nombre": docentes_map.get(c.docente_user_id, {}).get("nombre_completo"),
+                "docente_username": docentes_map.get(c.docente_user_id, {}).get("username"),
                 "status": c.status,
+                "alumnos_count": alumnos_count_map.get(c.id, 0)
             } for c in clases
         ],
         "total": len(clases),
+    }
+
+# Route '/clases/docente' moved earlier in the file to avoid shadowing by '/clases/{clase_id}'.
+
+
+
+
+
+@router.get("/clases/{clase_id}")
+async def get_clase(
+    clase_id: str,
+    db: Session = Depends(get_db),
+):
+    """Obtener información de una clase por ID"""
+    from app.infrastructure.db.models import ClaseModel
+    clase = db.query(ClaseModel).filter(ClaseModel.id == clase_id).first()
+    if not clase:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"error": "NotFound", "message": "Clase no encontrada"})
+
+    return {
+        "id": clase.id,
+        "curso_id": clase.curso_id,
+        "seccion_id": clase.seccion_id,
+        "periodo_id": clase.periodo_id,
+        "docente_user_id": clase.docente_user_id,
+        "status": clase.status,
     }
 
 
@@ -837,7 +1092,8 @@ async def update_clase(
             )
         
         from app.infrastructure.db.models import ClaseModel
-        clase_model = db.query(ClaseModel).filter(ClaseModel.id == clase_id, ClaseModel.status == "ACTIVO").first()
+        # Remove status filter to allow updating inactive classes
+        clase_model = db.query(ClaseModel).filter(ClaseModel.id == clase_id).first()
         
         if not clase_model:
             return JSONResponse(
@@ -853,6 +1109,35 @@ async def update_clase(
             clase_model.periodo_id = request.periodo_id
         if request.docente_user_id is not None:
             clase_model.docente_user_id = request.docente_user_id
+            
+        # Handle status update with validation
+        if request.status is not None:
+            if request.status in ["INACTIVO", "CANCELADA"] and clase_model.status == "ACTIVO":
+                # Check for active enrollments before deactivating
+                import httpx
+                try:
+                    async with httpx.AsyncClient() as client:
+                        personas_url = "http://localhost:8003/v1/matriculas/counts"
+                        headers = {"Authorization": authorization} if authorization else {}
+                        resp = await client.post(personas_url, json={"clase_ids": [clase_id]}, headers=headers)
+                        
+                        if resp.status_code == 200:
+                            counts = resp.json()
+                            if counts.get(clase_id, 0) > 0:
+                                return JSONResponse(
+                                    status_code=status.HTTP_409_CONFLICT,
+                                    content={
+                                        "error": "Conflict", 
+                                        "message": f"No se puede desactivar la clase porque tiene {counts[clase_id]} alumnos inscritos."
+                                    }
+                                )
+                except Exception as e:
+                    print(f"Error checking enrollments: {e}")
+                    # Fail safe: don't block update if check fails, or block? 
+                    # Let's block to be safe or log warning. Here we proceed but log.
+                    pass
+            
+            clase_model.status = request.status
         
         db.commit()
         db.refresh(clase_model)
@@ -994,7 +1279,7 @@ async def get_alumnos_de_clase(
         # Hacer llamada al servicio de personas para obtener alumnos matriculados
         import httpx
         async with httpx.AsyncClient() as client:
-            personas_url = "http://localhost:8003/v1/admin/clases/{}/alumnos".format(clase_id)
+            personas_url = "http://localhost:8003/v1/clases/{}/alumnos".format(clase_id)
             headers = {"Authorization": authorization} if authorization else {}
             
             response = await client.get(personas_url, headers=headers)
@@ -1052,6 +1337,47 @@ async def list_escalas(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"error": "INTERNAL_ERROR", "message": str(e)}
         )
+
+
+@router.get("/umbrales")
+async def list_umbrales(
+    escala_id: Optional[str] = Query(None),
+    curso_id: Optional[str] = Query(None),
+    grado_id: Optional[str] = Query(None),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    """Listar umbrales de alerta (filtro por escala/curso/grado)."""
+    try:
+        from app.infrastructure.db.models import UmbralAlertaModel
+        query = db.query(UmbralAlertaModel).filter(UmbralAlertaModel.is_deleted == False)
+        if escala_id:
+            query = query.filter(UmbralAlertaModel.escala_id == escala_id)
+        if curso_id:
+            query = query.filter(UmbralAlertaModel.curso_id == curso_id)
+        if grado_id:
+            query = query.filter(UmbralAlertaModel.grado_id == grado_id)
+
+        modelos = query.offset(offset).limit(limit).all()
+        result = []
+        for m in modelos:
+            result.append({
+                "id": m.id,
+                "grado_id": m.grado_id,
+                "curso_id": m.curso_id,
+                "escala_id": m.escala_id,
+                "valor_minimo_literal": str(m.valor_minimo_literal) if m.valor_minimo_literal is not None else None,
+                "valor_minimo_numerico": float(m.valor_minimo_numerico) if m.valor_minimo_numerico is not None else None,
+                "descripcion": m.descripcion,
+                "activo": bool(m.activo),
+            })
+
+        return {"umbrales": result, "total": len(result), "offset": offset, "limit": limit}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": "INTERNAL_ERROR", "message": str(e)})
 
 
 @router.get("/admin/escalas")

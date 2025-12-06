@@ -835,16 +835,28 @@ USE sga_notas;
 -- ============================================================================
 
 -- Crear usuarios de aplicación para cada servicio (Host: %)
-CREATE USER IF NOT EXISTS 'app_iam'@'%' IDENTIFIED BY 'iam_pass_2025';
-CREATE USER IF NOT EXISTS 'app_academico'@'%' IDENTIFIED BY 'academico_pass_2025';
-CREATE USER IF NOT EXISTS 'app_personas'@'%' IDENTIFIED BY 'personas_pass_2025';
-CREATE USER IF NOT EXISTS 'app_notas'@'%' IDENTIFIED BY 'notas_pass_2025';
+-- Crear usuarios de aplicación para cada servicio (Host: %)
+-- Usamos explicitamente el plugin `mysql_native_password` para compatibilidad con conectores
+CREATE USER IF NOT EXISTS 'app_iam'@'%' IDENTIFIED WITH mysql_native_password BY 'iam_pass_2025';
+CREATE USER IF NOT EXISTS 'app_academico'@'%' IDENTIFIED WITH mysql_native_password BY 'academico_pass_2025';
+CREATE USER IF NOT EXISTS 'app_personas'@'%' IDENTIFIED WITH mysql_native_password BY 'personas_pass_2025';
+CREATE USER IF NOT EXISTS 'app_notas'@'%' IDENTIFIED WITH mysql_native_password BY 'notas_pass_2025';
 
 -- Crear usuarios de aplicación para cada servicio (Host: localhost) - Para evitar problemas de conexión local
-CREATE USER IF NOT EXISTS 'app_iam'@'localhost' IDENTIFIED BY 'iam_pass_2025';
-CREATE USER IF NOT EXISTS 'app_academico'@'localhost' IDENTIFIED BY 'academico_pass_2025';
-CREATE USER IF NOT EXISTS 'app_personas'@'localhost' IDENTIFIED BY 'personas_pass_2025';
-CREATE USER IF NOT EXISTS 'app_notas'@'localhost' IDENTIFIED BY 'notas_pass_2025';
+CREATE USER IF NOT EXISTS 'app_iam'@'localhost' IDENTIFIED WITH mysql_native_password BY 'iam_pass_2025';
+CREATE USER IF NOT EXISTS 'app_academico'@'localhost' IDENTIFIED WITH mysql_native_password BY 'academico_pass_2025';
+CREATE USER IF NOT EXISTS 'app_personas'@'localhost' IDENTIFIED WITH mysql_native_password BY 'personas_pass_2025';
+CREATE USER IF NOT EXISTS 'app_notas'@'localhost' IDENTIFIED WITH mysql_native_password BY 'notas_pass_2025';
+
+-- Asegurar plugin y contraseña (idempotente) por si el servidor ya creó usuarios con otro plugin
+ALTER USER 'app_iam'@'%' IDENTIFIED WITH mysql_native_password BY 'iam_pass_2025';
+ALTER USER 'app_iam'@'localhost' IDENTIFIED WITH mysql_native_password BY 'iam_pass_2025';
+ALTER USER 'app_academico'@'%' IDENTIFIED WITH mysql_native_password BY 'academico_pass_2025';
+ALTER USER 'app_academico'@'localhost' IDENTIFIED WITH mysql_native_password BY 'academico_pass_2025';
+ALTER USER 'app_personas'@'%' IDENTIFIED WITH mysql_native_password BY 'personas_pass_2025';
+ALTER USER 'app_personas'@'localhost' IDENTIFIED WITH mysql_native_password BY 'personas_pass_2025';
+ALTER USER 'app_notas'@'%' IDENTIFIED WITH mysql_native_password BY 'notas_pass_2025';
+ALTER USER 'app_notas'@'localhost' IDENTIFIED WITH mysql_native_password BY 'notas_pass_2025';
 
 -- Grants para IAM service
 GRANT SELECT, INSERT, UPDATE, DELETE ON sga_iam.* TO 'app_iam'@'%';
@@ -857,6 +869,9 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON sga_academico.* TO 'app_academico'@'loca
 -- Grants para Personas service
 GRANT SELECT, INSERT, UPDATE, DELETE ON sga_personas.* TO 'app_personas'@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE ON sga_personas.* TO 'app_personas'@'localhost';
+
+GRANT SELECT ON sga_academico.clases TO 'app_notas'@'localhost';
+GRANT SELECT ON sga_academico.cursos TO 'app_notas'@'localhost';
 
 -- Grants para Notas service
 GRANT SELECT, INSERT, UPDATE, DELETE ON sga_notas.* TO 'app_notas'@'%';
@@ -871,6 +886,10 @@ GRANT SELECT ON sga_academico.umbrales_alerta TO 'app_notas'@'localhost';
 GRANT SELECT ON sga_academico.escalas_calificacion TO 'app_notas'@'localhost';
 GRANT SELECT ON sga_academico.valores_escala TO 'app_notas'@'localhost';
 
+-- Notas service necesita leer también datos de Personas (matriculas, alumnos)
+GRANT SELECT ON sga_personas.* TO 'app_notas'@'%';
+GRANT SELECT ON sga_personas.* TO 'app_notas'@'localhost';
+
 FLUSH PRIVILEGES;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -882,3 +901,29 @@ SET FOREIGN_KEY_CHECKS = 1;
 SELECT 'Base de datos creada exitosamente!' AS status;
 SELECT 'Esquemas creados: sga_iam, sga_academico, sga_personas, sga_notas' AS info;
 SELECT 'Usuario admin: admin@colegio.com / Admin123!' AS credentials;
+
+-- ============================================================================
+-- MIGRACIÓN SEGURA: El índice único uk_notas_matricula_tipo_periodo_escala
+-- ha sido REMOVIDO porque entra en conflicto con el sistema de notas dinámicas
+-- (N1, N2, N3...) que permite múltiples notas del mismo tipo en el mismo periodo.
+-- Se confía en unique_nota_columna (matricula, tipo, periodo, columna).
+-- ============================================================================
+
+
+-- ============================================================================
+-- MIGRACI�N MANUAL (Ejecutar si la tabla ya existe)
+-- ============================================================================
+/*
+USE sga_notas;
+
+-- Agregar columnas si no existen
+ALTER TABLE notas ADD COLUMN IF NOT EXISTS columna_nota VARCHAR(20) DEFAULT 'N1' AFTER observaciones;
+ALTER TABLE notas ADD COLUMN IF NOT EXISTS metadata_json JSON AFTER columna_nota;
+
+-- Actualizar �ndice �nico
+-- Nota: Si existe un �ndice anterior incompatible, borrarlo primero:
+-- DROP INDEX uk_notas_matricula_tipo_periodo_escala ON notas;
+
+-- Crear nuevo �ndice �nico incluyendo columna_nota
+-- CREATE UNIQUE INDEX unique_nota_columna ON notas (matricula_clase_id, tipo_evaluacion_id, periodo_id, columna_nota);
+*/

@@ -319,6 +319,16 @@ class SqlAlchemyClaseRepository(ClaseRepository):
         self.session.commit()
         self.session.refresh(model)
         return clase_model_to_domain(model)
+
+    def exists_by_curso_seccion_periodo(self, curso_id: str, seccion_id: str, periodo_id: str) -> bool:
+        """Verifica si ya existe una clase no eliminada para la combinación curso+seccion+periodo."""
+        model = self.session.query(ClaseModel).filter(
+            ClaseModel.curso_id == curso_id,
+            ClaseModel.seccion_id == seccion_id,
+            ClaseModel.periodo_id == periodo_id,
+            ClaseModel.is_deleted == False
+        ).first()
+        return True if model else False
     
     def find_by_id(self, clase_id: str) -> Optional[Clase]:
         model = self.session.query(ClaseModel).filter(

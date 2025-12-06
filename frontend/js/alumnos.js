@@ -5,7 +5,7 @@
 let alumnos = [];
 let grados = [];
 let currentPage = 1;
-let itemsPerPage = 20; // Se actualizará al cargar la configuración
+let itemsPerPage = 10; // Se actualizará al cargar la configuración (valor por defecto 10)
 let totalItems = 0;
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Cargar configuración
     if (typeof AppSettings !== 'undefined') {
-        itemsPerPage = AppSettings.getSetting('pagination.itemsPerPage', 20);
+        itemsPerPage = AppSettings.getSetting('pagination.itemsPerPage', 10);
     }
 
     // Cargar datos del usuario en navbar
@@ -53,6 +53,16 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('formAlumno').reset();
         document.getElementById('alumnoId').value = '';
         document.getElementById('modalAlumnoTitle').textContent = 'Nuevo Alumno';
+    });
+
+    // Auto-generar código cuando se abre el modal para crear nuevo alumno
+    document.getElementById('modalAlumno').addEventListener('show.bs.modal', async function () {
+        const alumnoId = document.getElementById('alumnoId').value;
+
+        // Solo autogenerar si es un nuevo alumno (no edición)
+        if (!alumnoId) {
+            await generarCodigoAlumno(true); // true = silent mode
+        }
     });
 });
 
@@ -89,8 +99,7 @@ function loadSidebarMenu() {
         { page: 'clases.html', label: 'Clases', icon: 'door-open-fill' },
         { page: 'alumnos.html', label: 'Alumnos', icon: 'people-fill', active: true },
         { page: 'matriculas.html', label: 'Matrículas', icon: 'journal-check' },
-        { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear' },
-        { page: 'notas.html', label: 'Notas', icon: 'clipboard-check' }
+        { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear' }
     ];
 
     const sidebarMenu = document.getElementById('sidebarMenu');
@@ -153,25 +162,17 @@ async function loadAlumnos(page = 1) {
 
     try {
         const offset = (currentPage - 1) * itemsPerPage;
-        const result = await PersonasService.listAlumnos(offset, itemsPerPage);
+        const result = await PersonasService.listAlumnos(offset, itemsPerPage, searchTerm);
 
         if (result.success) {
             alumnos = result.data.alumnos || result.data;
             totalItems = result.data.total || alumnos.length;
 
-            // Aplicar filtros del lado del cliente (temporal)
+            // Aplicar filtros del lado del cliente (temporal, solo para lo que no cubre el backend)
             let filteredAlumnos = alumnos.filter(a => {
                 let match = true;
 
-                if (searchTerm) {
-                    const searchLower = searchTerm.toLowerCase();
-                    match = match && (
-                        a.nombres.toLowerCase().includes(searchLower) ||
-                        a.apellidos.toLowerCase().includes(searchLower) ||
-                        a.codigo_alumno?.toLowerCase().includes(searchLower) ||
-                        a.dni?.includes(searchTerm)
-                    );
-                }
+                // Search ya se maneja en backend
 
                 if (genero) {
                     match = match && a.genero === genero;
@@ -180,7 +181,10 @@ async function loadAlumnos(page = 1) {
                 if (estado) {
                     match = match && a.status === estado;
                 }
-
+                
+                // Nota: El filtro de grado requiere lógica compleja (buscar matrículas), 
+                // por ahora se mantiene en cliente solo para los cargados.
+                
                 return match;
             });
 
@@ -436,92 +440,90 @@ function toggleSidebar() {
 }
 
 /**
- * Renderiza la paginación
+ * Renderiza la paginación (Estilo Matrículas)
  */
 function renderPagination() {
-    const paginationContainer = document.getElementById('pagination');
-    if (!paginationContainer) return;
+    try {
+        let container = document.getElementById('pagination');
+        const table = document.getElementById('alumnosTableBody');
 
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-    if (totalPages <= 1) {
-        paginationContainer.innerHTML = '';
-        return;
-    }
-
-    let paginationHTML = '';
-
-    // Botón anterior
-    paginationHTML += `
-        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="loadAlumnos(${currentPage - 1}); return false;">
-                <i class="bi bi-chevron-left"></i>
-            </a>
-        </li>
-    `;
-
-    // Páginas
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage < maxVisiblePages - 1) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    // Primera página
-    if (startPage > 1) {
-        paginationHTML += `
-            <li class="page-item">
-                <a class="page-link" href="#" onclick="loadAlumnos(1); return false;">1</a>
-            </li>
-        `;
-        if (startPage > 2) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'pagination';
+            container.className = 'd-flex justify-content-between align-items-center mt-3';
+            const tableElem = table.closest('table') || table.parentElement;
+            tableElem.parentNode.insertBefore(container, tableElem.nextSibling);
+        } else {
+            // Asegurar clases consistentes con matriculas
+            container.className = 'd-flex justify-content-between align-items-center mt-3';
         }
+
+        // Calcular páginas
+        const total = Number(totalItems) || 0;
+        const pageSize = Number(itemsPerPage);
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+        // Limitar currentPage
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        container.innerHTML = '';
+
+        // Lado izquierdo: Botones y Texto
+        const left = document.createElement('div');
+        left.className = 'pagination-left';
+
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'btn btn-sm btn-outline-primary me-2';
+        prevBtn.textContent = '« Prev';
+        prevBtn.disabled = currentPage <= 1;
+        prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; loadAlumnos(currentPage); } };
+
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'btn btn-sm btn-outline-primary ms-2';
+        nextBtn.textContent = 'Next »';
+        nextBtn.disabled = currentPage >= totalPages;
+        nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; loadAlumnos(currentPage); } };
+
+        const pageInfo = document.createElement('span');
+        pageInfo.className = 'mx-2 text-muted';
+        pageInfo.textContent = `Página ${currentPage} de ${totalPages} • ${total} registros`;
+
+        left.appendChild(prevBtn);
+        left.appendChild(pageInfo);
+        left.appendChild(nextBtn);
+
+        // Lado derecho: Selector de tamaño
+        const right = document.createElement('div');
+        right.className = 'pagination-right d-flex align-items-center';
+
+        const label = document.createElement('small');
+        label.className = 'me-2 text-muted';
+        label.textContent = 'Tamaño:';
+
+        const select = document.createElement('select');
+        select.className = 'form-select form-select-sm';
+        select.style.width = 'auto';
+        [10, 15, 20].forEach(n => {
+            const opt = document.createElement('option');
+            opt.value = n;
+            opt.textContent = `${n}`;
+            if (n === Number(itemsPerPage)) opt.selected = true;
+            select.appendChild(opt);
+        });
+        select.onchange = function() {
+            itemsPerPage = Number(this.value);
+            currentPage = 1;
+            loadAlumnos(1);
+        };
+
+        right.appendChild(label);
+        right.appendChild(select);
+
+        container.appendChild(left);
+        container.appendChild(right);
+    } catch (err) {
+        console.warn('No se pudo renderizar paginación:', err);
     }
-
-    // Páginas visibles
-    for (let i = startPage; i <= endPage; i++) {
-        paginationHTML += `
-            <li class="page-item ${i === currentPage ? 'active' : ''}">
-                <a class="page-link" href="#" onclick="loadAlumnos(${i}); return false;">${i}</a>
-            </li>
-        `;
-    }
-
-    // Última página
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-        }
-        paginationHTML += `
-            <li class="page-item">
-                <a class="page-link" href="#" onclick="loadAlumnos(${totalPages}); return false;">${totalPages}</a>
-            </li>
-        `;
-    }
-
-    // Botón siguiente
-    paginationHTML += `
-        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="loadAlumnos(${currentPage + 1}); return false;">
-                <i class="bi bi-chevron-right"></i>
-            </a>
-        </li>
-    `;
-
-    paginationContainer.innerHTML = paginationHTML;
-
-    // Mostrar info de paginación
-    const start = (currentPage - 1) * itemsPerPage + 1;
-    const end = Math.min(currentPage * itemsPerPage, totalItems);
-    const infoHTML = `
-        <div class="text-muted small mt-2 text-center">
-            Mostrando ${start} - ${end} de ${totalItems} alumnos
-        </div>
-    `;
-    paginationContainer.insertAdjacentHTML('afterend', infoHTML);
 }
 
 // ============================================
@@ -816,4 +818,102 @@ document.addEventListener('DOMContentLoaded', function () {
     if (formAgregarFamiliar) {
         formAgregarFamiliar.addEventListener('submit', agregarRelacion);
     }
+
+    const formRegistrarPadre = document.getElementById('formRegistrarPadre');
+    if (formRegistrarPadre) {
+        formRegistrarPadre.addEventListener('submit', registrarNuevoPadre);
+    }
 });
+
+/**
+ * Genera automáticamente el siguiente código de alumno disponible
+ * @param {boolean} silent - Si es true, no muestra el toast de éxito
+ */
+async function generarCodigoAlumno(silent = false) {
+    const codigoInput = document.getElementById('alumnoCodigo');
+
+    if (!codigoInput) return;
+
+    try {
+        const result = await PersonasService.getNextCodigoAlumno();
+
+        if (result.success && result.data.codigo) {
+            codigoInput.value = result.data.codigo;
+            if (!silent) {
+                showToast('Éxito', `Código generado: ${result.data.codigo}`, 'success');
+            }
+        } else {
+            throw new Error(result.error || 'Error al generar código');
+        }
+    } catch (error) {
+        console.error('Error generating codigo:', error);
+        if (!silent) {
+            showToast('Error', 'No se pudo generar el código automáticamente', 'error');
+        }
+    }
+}
+
+/**
+ * Registrar nuevo padre desde el modal de familiares
+ */
+async function registrarNuevoPadre(e) {
+    e.preventDefault();
+
+    const padreData = {
+        nombres: document.getElementById('nombresPadreNuevo').value.trim(),
+        apellido_paterno: document.getElementById('apellidoPaternoPadreNuevo').value.trim(),
+        apellido_materno: document.getElementById('apellidoMaternoPadreNuevo').value.trim() || null,
+        dni: document.getElementById('dniPadreNuevo').value.trim(),
+        email: document.getElementById('emailPadreNuevo').value.trim(),
+        celular: document.getElementById('celularPadreNuevo').value.trim() || null
+    };
+
+    // Validaciones
+    if (!padreData.nombres || !padreData.apellido_paterno || !padreData.dni || !padreData.email) {
+        showToast('Error', 'Complete todos los campos requeridos', 'error');
+        return;
+    }
+
+    if (padreData.dni.length !== 8) {
+        showToast('Error', 'El DNI debe tener 8 dígitos', 'error');
+        return;
+    }
+
+    try {
+        const result = await PersonasService.createPadre(padreData);
+
+        if (result.success) {
+            showToast('Éxito', 'Padre registrado correctamente', 'success');
+
+            // Ocultar formulario de registro
+            document.getElementById('padreNoEncontradoInfo').classList.add('d-none');
+            document.getElementById('formRegistrarPadre').reset();
+
+            // Mostrar padre encontrado
+            document.getElementById('padreEncontradoId').value = result.data.id;
+            document.getElementById('nombrePadreEncontrado').textContent = `${padreData.apellido_paterno} ${padreData.apellido_materno || ''}, ${padreData.nombres}`.trim();
+            document.getElementById('padreEncontradoInfo').classList.remove('d-none');
+            document.getElementById('btnAgregarRelacion').disabled = false;
+        } else {
+            throw new Error(result.error || 'Error al registrar padre');
+        }
+    } catch (error) {
+        console.error('Error registering padre:', error);
+        showToast('Error', error.message || 'Error al registrar padre', 'error');
+    }
+}
+
+/**
+ * Cancelar registro de nuevo padre
+ */
+function cancelarRegistroPadre() {
+    const padreNoEncontrado = document.getElementById('padreNoEncontradoInfo');
+    const formRegistrar = document.getElementById('formRegistrarPadre');
+
+    if (padreNoEncontrado) {
+        padreNoEncontrado.classList.add('d-none');
+    }
+    if (formRegistrar) {
+        formRegistrar.reset();
+    }
+}

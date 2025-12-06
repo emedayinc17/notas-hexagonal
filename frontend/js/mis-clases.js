@@ -7,7 +7,10 @@ let periodos = [];
 let cursos = [];
 let grados = [];
 let secciones = [];
-let currentUser = null;
+// Paginación para Mis Clases
+let misClasesPagination = { page: 1, pageSize: 10, totalPages: 1, totalItems: 0 };
+// Evitar redeclaraciones si otros scripts ya definieron `currentUser`
+if (typeof currentUser === 'undefined') currentUser = null;
 
 document.addEventListener('DOMContentLoaded', async function () {
     // Verificar autenticación y rol
@@ -145,12 +148,18 @@ async function loadClases() {
 
             // Filtrar localmente por periodo y curso si es necesario
             clases = allClases.filter(clase => {
-                if (periodoId && clase.periodo_id !== periodoId) return false;
-                if (cursoId && clase.curso_id !== cursoId) return false;
+                if (periodoId && String(clase.periodo_id) !== String(periodoId)) return false;
+                if (cursoId && String(clase.curso_id) !== String(cursoId)) return false;
                 return true;
             });
 
-            displayClases();
+            // Inicializar paginación
+            misClasesPagination.page = 1;
+            misClasesPagination.pageSize = 10; // default
+            misClasesPagination.totalItems = clases.length;
+            misClasesPagination.totalPages = Math.max(1, Math.ceil(misClasesPagination.totalItems / misClasesPagination.pageSize));
+
+            displayClasesPage();
         } else {
             showToast('Error al cargar clases', 'danger');
         }
@@ -167,7 +176,9 @@ async function loadClases() {
 function displayClases() {
     const tbody = document.getElementById('clasesTableBody');
 
-    if (clases.length === 0) {
+    const items = Array.from(arguments)[0] || clases;
+
+    if (!items || items.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="text-center text-muted py-4">
@@ -178,8 +189,7 @@ function displayClases() {
         `;
         return;
     }
-
-    tbody.innerHTML = clases.map(clase => {
+    tbody.innerHTML = items.map(clase => {
         const curso = cursos.find(c => c.id === clase.curso_id) || {};
         const periodo = periodos.find(p => p.id === clase.periodo_id) || {};
         const seccion = secciones.find(s => s.id === clase.seccion_id) || {};
@@ -205,6 +215,68 @@ function displayClases() {
             </tr>
         `;
     }).join('');
+}
+
+/**
+ * Renderiza la página actual de clases (usa `misClasesPagination` para fragmentar `clases`)
+ */
+function displayClasesPage() {
+    const start = (misClasesPagination.page - 1) * misClasesPagination.pageSize;
+    const pageItems = clases.slice(start, start + misClasesPagination.pageSize);
+    displayClases(pageItems);
+    renderMisClasesPagination();
+}
+
+function renderMisClasesPagination() {
+    const container = document.getElementById('paginationContainer');
+    if (!container) return;
+
+    const page = misClasesPagination.page || 1;
+    const total = misClasesPagination.totalPages || 1;
+    const totalItems = misClasesPagination.totalItems || 0;
+
+    container.innerHTML = '';
+    container.className = 'd-flex justify-content-between align-items-center mt-3';
+
+    const left = document.createElement('div');
+    left.className = 'pagination-left';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'btn btn-sm btn-outline-primary me-2';
+    prevBtn.disabled = page <= 1;
+    prevBtn.textContent = '« Prev';
+    prevBtn.onclick = () => {
+        if (misClasesPagination.page > 1) {
+            misClasesPagination.page = Math.max(1, misClasesPagination.page - 1);
+            displayClasesPage();
+        }
+    };
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn btn-sm btn-outline-primary ms-2';
+    nextBtn.disabled = page >= total;
+    nextBtn.textContent = 'Next »';
+    nextBtn.onclick = () => {
+        if (misClasesPagination.page < total) {
+            misClasesPagination.page = Math.min(total, misClasesPagination.page + 1);
+            displayClasesPage();
+        }
+    };
+
+    const info = document.createElement('span');
+    info.className = 'mx-2 text-muted';
+    info.textContent = `Página ${page} de ${total} • ${totalItems} clases`;
+
+    left.appendChild(prevBtn);
+    left.appendChild(info);
+    left.appendChild(nextBtn);
+
+    // No mostrar selector de tamaño (UX: fixed 10)
+    const right = document.createElement('div');
+    right.className = 'pagination-right text-muted';
+
+    container.appendChild(left);
+    container.appendChild(right);
 }
 
 /**
@@ -350,7 +422,7 @@ function updateUserInfo() {
  */
 function loadSidebarMenu() {
     const menuItems = [
-        { page: 'dashboard.html', label: 'Dashboard', icon: 'grid-fill', active: false },
+        { page: '../pages/dashboard.html', label: 'Dashboard', icon: 'grid-fill', active: false },
         { page: 'mis-clases.html', label: 'Mis Clases', icon: 'door-open-fill', active: true },
         { page: 'notas.html', label: 'Gestionar Notas', icon: 'clipboard-check', active: false }
     ];

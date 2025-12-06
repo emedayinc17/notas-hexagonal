@@ -1,0 +1,45 @@
+﻿Invoke-RestMethod 
+: {"detail":[{"typ
+e":"missing","loc"
+:["body","email"],
+"msg":"Field requi
+red","input":{"pas
+sword":"Admin123!"
+,"username":"admin
+"},"url":"https://
+errors.pydantic.de
+v/2.5/v/missing"}]
+}
+En E:\Notas-hexago
+nal\.run\run_batch
+.ps1: 19 
+Carácter: 14
++ ...    $login = 
+Invoke-RestMethod 
+-Method Post -Uri 
+'http://localhost:
+800 ...
++                 
+~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInf 
+   o          :   
+  InvalidOperat   
+ ion: (System.    
+Net.HttpWebRe    
+quest:HttpWeb    
+Request) [Inv    
+oke-RestMetho    
+d], WebExcept    
+ion
+    + FullyQualif 
+   iedErrorId :   
+  WebCmdletWebR   
+ esponseExcept    
+ion,Microsoft    
+.PowerShell.C    
+ommands.Invok    
+eRestMethodCo    
+mmand

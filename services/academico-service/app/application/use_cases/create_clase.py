@@ -1,5 +1,5 @@
 # Académico Service - Use Case: Create Clase
-from shared.common import generate_uuid
+from shared.common import generate_uuid, AlreadyExistsException
 from app.domain import (
     Clase,
     ClaseRepository,
@@ -58,7 +58,19 @@ class CreateClaseUseCase:
             docente_user_id=docente_user_id,
             status="ACTIVA",
         )
-        
+
+        # Verificar que no exista otra clase no eliminada para la misma combinación
+        try:
+            exists = self.clase_repository.exists_by_curso_seccion_periodo(curso_id, seccion_id, periodo_id)
+        except Exception:
+            # Si hay un error consultando el repo, seguir y dejar que la inserción falle
+            exists = False
+
+        if exists:
+            raise AlreadyExistsException(
+                f"Ya existe una clase para curso {curso_id}, sección {seccion_id} y periodo {periodo_id}"
+            )
+
         clase_creada = self.clase_repository.create(nueva_clase)
         clase_creada.curso = curso
         clase_creada.seccion = seccion

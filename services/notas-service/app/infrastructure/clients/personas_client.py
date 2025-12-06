@@ -23,7 +23,21 @@ class PersonasServiceClient:
                     timeout=10.0
                 )
                 if response.status_code == 200:
-                    return response.json()
+                    data = response.json()
+                    # Personas Service returns {"relaciones": [...]} where each item contains a nested "padre".
+                    if isinstance(data, dict):
+                        items = data.get("relaciones", [])
+                    else:
+                        items = data
+
+                    # Normalize to a list of padre dicts (flatten relaciones -> padre)
+                    padres = []
+                    for it in items:
+                        if isinstance(it, dict) and it.get("padre"):
+                            padres.append(it.get("padre"))
+                        elif isinstance(it, dict) and it.get("email"):
+                            padres.append(it)
+                    return padres
                 return []
             except Exception as e:
                 print(f"Error calling Personas Service: {e}")

@@ -79,8 +79,7 @@ function loadSidebarMenu() {
         { page: 'clases.html', label: 'Clases', icon: 'door-open-fill' },
         { page: 'alumnos.html', label: 'Alumnos', icon: 'people-fill' },
         { page: 'matriculas.html', label: 'Matrículas', icon: 'journal-check' },
-        { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear', active: true },
-        { page: 'notas.html', label: 'Notas', icon: 'clipboard-check' }
+        { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear', active: true }
     ];
 
     const sidebarMenu = document.getElementById('sidebarMenu');

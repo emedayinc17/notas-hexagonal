@@ -48,24 +48,33 @@ class LinkPadreAlumnoUseCase:
         if not alumno:
             raise AlumnoNotFoundException(f"Alumno {alumno_id} no encontrado")
         
-        # Verificar si la relación ya existe (mismo padre y mismo alumno)
-        # Nota: el repositorio expone `find_by_alumno`, no `find_by_alumno_id`
+        # Verificar si existe una relación (incluyendo eliminadas) entre este padre y alumno
+        relacion_existente = self.relacion_repository.find_by_padre_and_alumno_including_deleted(
+            padre_id, alumno_id
+        )
+        
+        if relacion_existente:
+            # Si la relación existe pero está eliminada, reactivarla
+            if relacion_existente.is_deleted:
+                relacion_existente.is_deleted = False
+                relacion_existente.tipo_relacion = tipo_relacion
+                relacion_existente.es_contacto_principal = es_contacto_principal
+                return self.relacion_repository.update(relacion_existente)
+            else:
+                # Si la relación existe y está activa, lanzar error
+                raise RelacionAlreadyExistsException(
+                    f"Ya existe una relación activa entre el padre {padre_id} y el alumno {alumno_id}"
+                )
+        
+        # Verificar que este ALUMNO específico no tenga ya una relación del mismo tipo
         relaciones_existentes = self.relacion_repository.find_by_alumno(alumno_id)
         for relacion in relaciones_existentes:
-            # Validar que no exista la misma relación padre-alumno
-            if relacion.padre_id == padre_id and not relacion.is_deleted:
-                raise RelacionAlreadyExistsException(
-                    f"Ya existe una relación entre el padre {padre_id} y el alumno {alumno_id}"
-                )
-            
-            # Validar que este ALUMNO específico no tenga ya una relación del mismo tipo
-            # NOTA: Diferentes alumnos SÍ pueden tener el mismo padre (hermanos, primos)
             if relacion.tipo_relacion == tipo_relacion and not relacion.is_deleted:
                 raise TipoRelacionDuplicadaException(
                     f"El alumno ya tiene un {tipo_relacion.lower()} asignado. Solo puede tener uno de cada tipo."
                 )
         
-        # Crear relación
+        # Crear nueva relación
         nueva_relacion = RelacionPadreAlumno(
             id=generate_uuid(),
             padre_id=padre_id,

@@ -29,6 +29,7 @@ class Nota:
     valor_numerico: Optional[float] = None
     peso: Optional[float] = None
     observaciones: Optional[str] = None
+    columna_nota: str = "N1"
     is_deleted: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

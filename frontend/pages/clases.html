@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clases - Sistema de Gestión Académica</title>
-    
+
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -12,6 +13,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../css/styles.css">
 </head>
+
 <body>
     <div class="wrapper">
         <!-- Sidebar -->
@@ -58,156 +60,166 @@
             <div class="container-fluid py-4">
                 <div class="row mb-4">
                     <div class="col">
-                        <h2 class="mb-0">
-                            <i class="bi bi-door-open-fill me-2 text-primary"></i>
-                            Gestión de Clases
-                        </h2>
-                    </div>
-                    <div class="col-auto">
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalClase">
-                            <i class="bi bi-plus-lg me-2"></i>Nueva Clase
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Filters -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">Curso</label>
-                                <select class="form-select" id="filterCurso">
-                                    <option value="">Todos los cursos</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Sección</label>
-                                <select class="form-select" id="filterSeccion">
-                                    <option value="">Todas las secciones</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Periodo</label>
-                                <select class="form-select" id="filterPeriodo">
-                                    <option value="">Todos los periodos</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Estado</label>
-                                <select class="form-select" id="filterEstado">
-                                    <option value="">Todos</option>
-                                    <option value="ACTIVO">Activo</option>
-                                    <option value="INACTIVO">Inactivo</option>
-                                </select>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Curso</label>
+                                    <select class="form-select" id="filterCurso">
+                                        <option value="">Todos los cursos</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Sección</label>
+                                    <select class="form-select" id="filterSeccion">
+                                        <option value="">Todas las secciones</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Periodo</label>
+                                    <select class="form-select" id="filterPeriodo">
+                                        <option value="">Todos los periodos</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Estado</label>
+                                    <select class="form-select" id="filterEstado">
+                                        <option value="">Todos</option>
+                                        <option value="ACTIVO">Activo</option>
+                                        <option value="INACTIVO">Inactivo</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Table -->
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Curso</th>
-                                        <th>Sección</th>
-                                        <th>Periodo</th>
-                                        <th>Docente</th>
-                                        <th>Alumnos</th>
-                                        <th>Estado</th>
-                                        <th width="120">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="clasesTableBody">
-                                    <tr>
-                                        <td colspan="7" class="text-center py-4">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Cargando...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <!-- Table -->
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Curso</th>
+                                            <th>Sección</th>
+                                            <th>Periodo</th>
+                                            <th>Docente</th>
+                                            <th>Alumnos</th>
+                                            <th>Estado</th>
+                                            <th width="120">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="clasesTableBody">
+                                        <tr>
+                                            <td colspan="7" class="text-center py-4">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Cargando...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div id="pagination" class="d-flex justify-content-between align-items-center mt-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Clase -->
+        <div class="modal fade" id="modalClase" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalClaseTitle">Nueva Clase</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="formClase">
+                            <input type="hidden" id="claseId">
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="claseCurso" class="form-label">Curso <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select" id="claseCurso" required>
+                                        <option value="">Seleccionar curso...</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="claseSeccion" class="form-label">Sección <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select" id="claseSeccion" required>
+                                        <option value="">Seleccionar sección...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="clasePeriodo" class="form-label">Periodo <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select" id="clasePeriodo" required>
+                                        <option value="">Seleccionar periodo...</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="claseDocente" class="form-label">Docente <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select" id="claseDocente" required>
+                                        <option value="">Seleccionar docente...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row" id="divEstadoClase" style="display: none;">
+                                <div class="col-md-6 mb-3">
+                                    <label for="claseEstado" class="form-label">Estado</label>
+                                    <select class="form-select" id="claseEstado">
+                                        <option value="ACTIVO">ACTIVO</option>
+                                        <option value="INACTIVO">INACTIVO</option>
+                                    </select>
+                                    <div class="form-text text-muted small">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        Solo inactivar si no hay alumnos.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info small mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Nota:</strong> Una clase representa la asignación de un curso a una sección
+                                específica,
+                                en un periodo determinado, con un docente responsable.
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-secondary"
+                                    data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save me-2"></i>Guardar
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal Clase -->
-    <div class="modal fade" id="modalClase" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalClaseTitle">Nueva Clase</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formClase">
-                        <input type="hidden" id="claseId">
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="claseCurso" class="form-label">Curso <span class="text-danger">*</span></label>
-                                <select class="form-select" id="claseCurso" required>
-                                    <option value="">Seleccionar curso...</option>
-                                </select>
-                            </div>
+        <!-- Bootstrap Bundle with Popper -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-                            <div class="col-md-6 mb-3">
-                                <label for="claseSeccion" class="form-label">Sección <span class="text-danger">*</span></label>
-                                <select class="form-select" id="claseSeccion" required>
-                                    <option value="">Seleccionar sección...</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="clasePeriodo" class="form-label">Periodo <span class="text-danger">*</span></label>
-                                <select class="form-select" id="clasePeriodo" required>
-                                    <option value="">Seleccionar periodo...</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label for="claseDocente" class="form-label">Docente <span class="text-danger">*</span></label>
-                                <select class="form-select" id="claseDocente" required>
-                                    <option value="">Seleccionar docente...</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="alert alert-info small mb-3">
-                            <i class="bi bi-info-circle me-2"></i>
-                            <strong>Nota:</strong> Una clase representa la asignación de un curso a una sección específica, 
-                            en un periodo determinado, con un docente responsable.
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-2">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save me-2"></i>Guardar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Custom Scripts -->
-    <script src="../js/config.js"></script>
-    <script src="../js/utils.js"></script>
-    <script src="../js/backdrop-cleaner.js"></script>
-    <script src="../js/api.js"></script>
-    <script src="../js/auth.js"></script>
-    <script src="/js/clases.js"></script>
+        <!-- Custom Scripts -->
+        <script src="../js/config.js"></script>
+        <script src="../js/utils.js"></script>
+        <script src="../js/backdrop-cleaner.js"></script>
+        <script src="../js/api.js"></script>
+        <script src="../js/auth.js"></script>
+        <script src="/js/clases.js"></script>
 </body>
+
 </html>

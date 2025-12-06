@@ -1,0 +1,43 @@
+﻿Invoke-RestMethod : {"detai
+l":[{"type":"model_attribut
+es_type","loc":["body"],"ms
+g":"Input should be a 
+valid dictionary or object 
+to extract fields from","in
+put":[{"matricula_clase_id"
+:"00000000-0000-0000-0000-0
+00000000000","tipo_evaluaci
+on_id":"00000000-0000-0000-
+0000-000000000000","periodo
+_id":"00000000-0000-0000-00
+00-000000000000","escala_id
+":"00000000-0000-0000-0000-
+000000000000","valor_numeri
+co":12.5,"fecha_registro":"
+2025-05-01","columna_nota":
+"N1","observaciones":"prueb
+a desde script"}],"url":"ht
+tps://errors.pydantic.dev/2
+.5/v/model_attributes_type"
+}]}
+En E:\Notas-hexagonal\.run\
+run_batch.ps1: 51 
+Carácter: 13
++     $resp = 
+Invoke-RestMethod -Method 
+Post -Uri 
+'http://localhost:800 ...
++             ~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : InvalidOperation:   
+  (System.Net.HttpWebReq   
+ uest:HttpWebRequest) [    
+Invoke-RestMethod], We    
+bException
+    + FullyQualifiedErrorI 
+   d : WebCmdletWebRespon  
+  seException,Microsoft.   
+ PowerShell.Commands.In    
+vokeRestMethodCommand

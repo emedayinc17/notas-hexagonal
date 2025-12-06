@@ -37,7 +37,12 @@ class AcademicoServiceClient:
                 )
                 if response.status_code == 200:
                     data = response.json()
-                    return data[0] if data else None
+                    # Académico returns {"umbrales": [...]} so normalize
+                    if isinstance(data, dict):
+                        items = data.get("umbrales", [])
+                    else:
+                        items = data
+                    return items[0] if items else None
                 return None
             except Exception as e:
                 print(f"Error calling Académico Service: {e}")

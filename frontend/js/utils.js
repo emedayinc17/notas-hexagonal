@@ -86,13 +86,33 @@ function showAlert(message, type = 'info', containerId = 'alertContainer') {
 /**
  * Muestra un toast notification
  */
-function showToast(message, type = 'success') {
+/**
+ * Muestra un toast notification
+ * Soporta firmas: (message, type) o (title, message, type)
+ */
+function showToast(arg1, arg2, arg3) {
+    let title, message, type;
+
+    if (arg3) {
+        // Firma: (title, message, type)
+        title = arg1;
+        message = arg2;
+        type = arg3;
+    } else {
+        // Firma: (message, type)
+        message = arg1;
+        type = arg2 || 'success';
+    }
+
+    // Normalizar tipos
+    if (type === 'error') type = 'danger';
+
     // Crear contenedor de toasts si no existe
     let toastContainer = document.getElementById('toastContainer');
     if (!toastContainer) {
         toastContainer = document.createElement('div');
         toastContainer.id = 'toastContainer';
-        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
         toastContainer.style.zIndex = '9999';
         document.body.appendChild(toastContainer);
     }
@@ -106,14 +126,19 @@ function showToast(message, type = 'success') {
     };
 
     const bgClass = `bg-${type}`;
+    const icon = iconMap[type] || 'info-circle-fill';
+
+    // Construir contenido
+    const content = title ? `<strong>${title}</strong><br>${message}` : message;
 
     const toastHTML = `
-        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
                 <div class="toast-body">
-                    <i class="bi bi-${iconMap[type]} me-2"></i>${message}
+                    <i class="bi bi-${icon} me-2"></i>
+                    <span>${content}</span>
                 </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
         </div>
     `;
@@ -121,7 +146,7 @@ function showToast(message, type = 'success') {
     toastContainer.insertAdjacentHTML('beforeend', toastHTML);
 
     const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+    const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 5000 });
     toast.show();
 
     // Remover del DOM después de ocultarse
@@ -200,6 +225,19 @@ function capitalize(str) {
 function truncate(str, maxLength = 50) {
     if (!str) return '';
     return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+}
+
+/**
+ * Escapa texto para inserción segura en HTML
+ */
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**
@@ -286,14 +324,19 @@ function setupSidebar() {
 
     if (!sidebarMenu) return;
 
-    sidebarMenu.innerHTML = menuItems.map(item => `
+    sidebarMenu.innerHTML = menuItems.map(item => {
+        // Normalize link to point to /pages/<file> for consistent navigation
+        const pagePath = item.page.startsWith('/') ? item.page : `/pages/${item.page}`;
+        const activeClass = isCurrentPage(item.page) || isCurrentPage(pagePath) ? 'active' : '';
+        return `
         <li>
-            <a href="#" onclick="navigateToPage('${item.page}')" class="${isCurrentPage(item.page) ? 'active' : ''}">
+            <a href="${pagePath}" onclick="navigateToPage('${item.page}')" class="${activeClass}">
                 <i class="bi bi-${item.icon}"></i>
                 <span class="menu-text">${item.label}</span>
             </a>
         </li>
-    `).join('');
+        `;
+    }).join('');
 }
 
 /**
@@ -310,8 +353,7 @@ function getMenuItemsByRole(role) {
             { page: 'clases.html', label: 'Clases', icon: 'door-open-fill' },
             { page: 'alumnos.html', label: 'Alumnos', icon: 'people-fill' },
             { page: 'matriculas.html', label: 'Matrículas', icon: 'journal-check' },
-            { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear' },
-            { page: 'notas.html', label: 'Notas', icon: 'clipboard-check' }
+            { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear' }
         ],
         'DOCENTE': [
             { page: 'dashboard.html', label: 'Dashboard', icon: 'grid-fill' },
@@ -331,18 +373,115 @@ function getMenuItemsByRole(role) {
  * Navega a una página
  */
 function navigateToPage(page) {
-    // Si ya estamos en la página, no hacer nada
-    if (window.location.pathname.includes(page)) return;
+    // Compute candidate paths
+    const candidate = page.startsWith('/') ? page : `/pages/${page}`;
 
-    // Construir ruta relativa
-    // Asumimos que todas las páginas están en /pages/ o en la raíz /frontend/pages/
-    // Si estamos en /pages/notas.html, ir a /pages/dashboard.html es directo
-    window.location.href = page;
+    // Si ya estamos en la página, no hacer nada
+    if (isCurrentPage(page) || isCurrentPage(candidate)) return;
+
+    // Navegar a la ruta normalizada
+    window.location.href = candidate;
 }
 
 /**
  * Verifica si es la página actual
  */
 function isCurrentPage(page) {
-    return window.location.pathname.includes(page);
+    if (!page) return false;
+
+    // Normalize
+    const normalized = page.startsWith('/') ? page : `/pages/${page}`;
+
+    const path = window.location.pathname || '';
+
+    return path.endsWith(page) || path.includes(page) || path.endsWith(normalized) || path.includes(normalized);
+}
+
+/**
+ * Muestra un diálogo de confirmación
+ */
+async function showConfirm(title, message) {
+    return new Promise((resolve) => {
+        const result = window.confirm(`${title}\n\n${message}`);
+        resolve(result);
+    });
+}
+
+// ============================================
+// Helpers globales: cargar información de usuario y sidebar
+// ============================================
+/**
+ * Carga la información del usuario en la cabecera (nombre, rol y avatar)
+ */
+function loadUserInfo() {
+    try {
+        const user = getUserData();
+        if (!user) return;
+
+        const nameEl = document.getElementById('userName');
+        const roleEl = document.getElementById('userRole');
+        const avatarEl = document.getElementById('userAvatar');
+
+        if (nameEl) {
+            const full = [user.nombres, user.apellidos].filter(Boolean).join(' ');
+            nameEl.textContent = full || user.username || user.email || '';
+        }
+
+        if (roleEl) {
+            roleEl.innerHTML = getRoleBadge(user.rol?.nombre);
+        }
+
+        if (avatarEl) {
+            const initials = getInitials(user.nombres || user.username || user.email || '??');
+            const color = getRandomColor();
+            avatarEl.innerHTML = `<div class="avatar-circle" style="background:${color};width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600">${initials}</div>`;
+        }
+    } catch (e) {
+        console.warn('loadUserInfo error:', e);
+    }
+}
+
+/**
+ * Carga/construye el menú lateral según el rol del usuario
+ */
+function loadSidebarMenu() {
+    try {
+        setupSidebar();
+    } catch (e) {
+        console.warn('loadSidebarMenu error:', e);
+    }
+}
+
+// Compatibilidad: populateSelect global (si no está definida en otras páginas)
+if (typeof populateSelect === 'undefined') {
+    /**
+     * populateSelect(selectId, data, valueField = 'id', labelField = 'nombre', defaultLabel = null, isFilter = false)
+     * Rellena un <select> con un array de objetos. Compatibilidad con distintas firmas usadas en el repo.
+     */
+    function populateSelect(selectId, data, valueField = 'id', labelField = 'nombre', defaultLabel = null, isFilter = false) {
+        try {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+
+            // Normalizar data a array
+            let items = [];
+            if (Array.isArray(data)) items = data;
+            else if (data && Array.isArray(data.items)) items = data.items;
+            else if (data && Array.isArray(data.periodos)) items = data.periodos;
+            else if (data && Array.isArray(data.cursos)) items = data.cursos;
+            else if (data && Array.isArray(data.clases)) items = data.clases;
+            else if (data && Array.isArray(data.secciones)) items = data.secciones;
+
+            const defaultOption = defaultLabel !== null ? defaultLabel : (isFilter ? 'Todos' : 'Seleccionar...');
+            select.innerHTML = `<option value="">${defaultOption}</option>`;
+
+            items.forEach(item => {
+                const value = item[valueField] || item.id || '';
+                const label = (item[labelField] !== undefined) ? item[labelField] : (item.nombre || item.nombre_corto || value);
+                select.innerHTML += `<option value="${value}">${label}</option>`;
+            });
+        } catch (e) {
+            console.warn('populateSelect error:', e);
+        }
+    }
 }

@@ -11,7 +11,7 @@ let periodos = [];
 let docentes = [];
 let grados = [];
 let currentPage = 1;
-const itemsPerPage = 10;
+let itemsPerPage = 10; // ahora configurable (10/15/20)
 
 document.addEventListener('DOMContentLoaded', function () {
     // Verificar autenticación y rol ADMIN
@@ -33,10 +33,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event listeners
     document.getElementById('formMatricula').addEventListener('submit', handleSubmitMatricula);
-    document.getElementById('searchInput').addEventListener('input', debounce(loadMatriculas, 500));
-    document.getElementById('filterClase').addEventListener('change', loadMatriculas);
-    document.getElementById('filterPeriodo').addEventListener('change', loadMatriculas);
-    document.getElementById('filterEstado').addEventListener('change', loadMatriculas);
+    document.getElementById('searchInput').addEventListener('input', debounce(function(){ currentPage = 1; loadMatriculas(); }, 500));
+    document.getElementById('filterClase').addEventListener('change', function(){ currentPage = 1; loadMatriculas(); });
+    document.getElementById('filterPeriodo').addEventListener('change', function(){ currentPage = 1; loadMatriculas(); });
+    document.getElementById('filterEstado').addEventListener('change', function(){ currentPage = 1; loadMatriculas(); });
     document.getElementById('sidebarCollapse').addEventListener('click', toggleSidebar);
 
     // Búsqueda incremental de alumnos en matrícula
@@ -50,6 +50,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Mostrar información de la clase al seleccionar
     document.getElementById('matriculaClase').addEventListener('change', showClaseInfo);
+    // Re-evaluar estado del alumno seleccionado cada vez que cambia la clase
+    document.getElementById('matriculaClase').addEventListener('change', function () {
+        evaluateSelectedAlumnoStatus();
+    });
 
     // Establecer fecha actual por defecto
     document.getElementById('matriculaFecha').value = new Date().toISOString().split('T')[0];
@@ -67,7 +71,27 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('matriculaAlumno').value = '';
         hideAlumnosDropdown();
         
+        // Remover badge/label de estado del alumno si existe
+        const statusEl = document.getElementById('matriculaAlumnoStatus');
+        if (statusEl) statusEl.remove();
+
+        // Rehabilitar botón enviar por si estaba deshabilitado
+        const submitBtn = document.querySelector('#formMatricula button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = false;
+
         resetFamiliaresMatricula();
+    });
+
+    // Al abrir el modal de matrícula, refrescar la lista desde el servidor
+    // para evitar usar datos potencialmente stale en memoria.
+    document.getElementById('modalMatricula').addEventListener('show.bs.modal', async function () {
+        try {
+                    // Al abrir el modal reseteamos a primera página y refrescamos datos
+                    currentPage = 1;
+                    await Promise.allSettled([loadAlumnos(), loadClases(), loadMatriculas()]);
+        } catch (err) {
+            console.warn('No se pudo refrescar datos al abrir modal:', err);
+        }
     });
 
     // Event listeners para gestión de familiares
@@ -118,6 +142,49 @@ async function initializeData() {
 }
 
 /**
+ * Selecciona un padre mostrado en la lista de padres existentes y lo copia al bloque
+ * de "padre encontrado" dentro del formulario para permitir agregar la relación.
+ */
+function selectPadreFromList(padreId, padreNombre, padreDni, esPrincipal = false, tipoRelacion = '') {
+    try {
+        const gestionCard = document.querySelector('#modalMatricula .card.border-secondary');
+        const padreBlock = document.getElementById('padreEncontradoMatricula');
+        const padreIdEl = document.getElementById('padreEncontradoIdMatricula');
+        const padreNombreEl = document.getElementById('nombrePadreEncontradoMatricula');
+        const padreDniEl = document.getElementById('dniPadreEncontradoMatricula');
+        const esPrincipalEl = document.getElementById('esPrincipalMatricula');
+        const tipoRelacionEl = document.getElementById('tipoRelacionMatricula');
+
+        if (padreIdEl) padreIdEl.value = padreId || '';
+        if (padreNombreEl) padreNombreEl.textContent = padreNombre || '';
+        if (padreDniEl) padreDniEl.textContent = padreDni || '';
+        if (esPrincipalEl) esPrincipalEl.checked = !!esPrincipal;
+        if (tipoRelacionEl && tipoRelacion) {
+            // intentar seleccionar el tipo si existe en el select
+            const opt = Array.from(tipoRelacionEl.options).find(o => o.value === tipoRelacion);
+            if (opt) tipoRelacionEl.value = tipoRelacion;
+        }
+
+        // Mostrar el bloque de padre encontrado y la tarjeta de gestión para poder agregar la relación
+        if (padreBlock) padreBlock.classList.remove('d-none');
+        if (gestionCard) gestionCard.classList.remove('d-none');
+
+        // Hacer scroll al bloque de padre encontrado para mejor UX
+        try { padreBlock && padreBlock.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+
+        showToast('Padre seleccionado', 'Ahora puedes ajustar tipo y agregar la relación', 'info');
+    } catch (err) {
+        console.warn('Error seleccionando padre desde la lista:', err);
+    }
+}
+
+// Helper simple para escapar atributos HTML
+function escapeHtml(str) {
+    if (!str && str !== 0) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
  * Carga la información del usuario en el navbar
  */
 function loadUserInfo() {
@@ -142,8 +209,7 @@ function loadSidebarMenu() {
         { page: 'clases.html', label: 'Clases', icon: 'door-open-fill' },
         { page: 'alumnos.html', label: 'Alumnos', icon: 'people-fill' },
         { page: 'matriculas.html', label: 'Matrículas', icon: 'journal-check', active: true },
-        { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear' },
-        { page: 'notas.html', label: 'Notas', icon: 'clipboard-check' }
+        { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear' }
     ];
 
     const sidebarMenu = document.getElementById('sidebarMenu');
@@ -164,7 +230,10 @@ async function loadAlumnos() {
     try {
         const result = await PersonasService.listAlumnos(0, 100);
         if (result.success) {
-            alumnos = (result.data.alumnos || result.data).filter(a => a.status === 'ACTIVO');
+            // Normalizar IDs a string para evitar comparaciones tipo-sensitive
+            alumnos = (result.data.alumnos || result.data)
+                .filter(a => a.status === 'ACTIVO')
+                .map(a => Object.assign({}, a, { id: String(a.id) }));
             populateAlumnosSelect();
         }
     } catch (error) {
@@ -230,13 +299,38 @@ function handleAlumnoSearch() {
 /**
  * Selecciona un alumno
  */
-function selectAlumno(alumno) {
+async function selectAlumno(alumno) {
     document.getElementById('matriculaAlumnoSearch').value = `${alumno.apellidos}, ${alumno.nombres}`;
     document.getElementById('matriculaAlumno').value = alumno.id;
     hideAlumnosDropdown();
 
-    // Verificar si el alumno ya está matriculado en esta clase
-    checkAlumnoMatriculado(alumno);
+    // Mientras verificamos en servidor, deshabilitar el botón para evitar envíos rápidos
+    const submitBtn = document.querySelector('#formMatricula button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+
+    // Verificar si el alumno ya está matriculado en esta clase usando el servidor
+    try {
+        const ya = await checkAlumnoMatriculado(alumno);
+        if (ya) {
+            showAlumnoStatus('Este alumno ya está matriculado en la clase seleccionada', 'matriculado');
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            showAlumnoStatus('Disponible para matricular', 'available');
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    } catch (err) {
+        console.warn('Error verificando matricula en servidor:', err);
+        // En caso de error conservador, habilitar botón para que el usuario pueda intentar, pero mostrar info
+        showAlumnoStatus('No fue posible verificar estado (intenta nuevamente)', 'available');
+        if (submitBtn) submitBtn.disabled = false;
+    }
+
+    // Cargar padres/tutores existentes del alumno y ajustar UI de gestión de familiares
+    try {
+        await loadPadresForAlumno(alumno.id);
+    } catch (e) {
+        console.warn('No se pudo cargar padres del alumno:', e);
+    }
 }
 
 /**
@@ -258,18 +352,105 @@ function hideAlumnosDropdown() {
 /**
  * Verifica si el alumno ya está matriculado
  */
-function checkAlumnoMatriculado(alumno) {
+async function checkAlumnoMatriculado(alumno) {
     const claseId = document.getElementById('matriculaClase').value;
-    if (!claseId) return;
+    if (!claseId) return false;
 
-    const yaMatriculado = matriculas.some(m => 
-        m.alumno_id === alumno.id && 
-        m.clase_id === claseId && 
+    try {
+        // Intentar verificación directa en servidor para evitar falsos negativos por datos stale
+        const result = await PersonasService.listMatriculas(0, 1, alumno.id, claseId);
+        if (result.success) {
+            const found = (result.data.matriculas || result.data || []).some(m => String(m.alumno_id) === String(alumno.id) && String(m.clase_id) === String(claseId) && m.status === 'ACTIVO');
+            return !!found;
+        }
+        // Si la consulta al servidor falla, hacemos fallback a la verificación local
+        console.warn('Fallback a verificación local de matrículas por error en servidor:', result.error);
+    } catch (err) {
+        console.warn('Error consultando matrículas en servidor:', err);
+    }
+
+    // Fallback: verificar en memoria
+    const yaMatriculadoLocal = matriculas.some(m =>
+        String(m.alumno_id) === String(alumno.id) &&
+        String(m.clase_id) === String(claseId) &&
         m.status === 'ACTIVO'
     );
 
-    if (yaMatriculado) {
-        showToast('Información', 'Este alumno ya está matriculado en esta clase', 'warning');
+    return yaMatriculadoLocal;
+}
+
+/**
+ * Muestra un badge/label pequeño indicando el estado del alumno en el modal.
+ * type: 'matriculado' | 'available'
+ */
+function showAlumnoStatus(message, type = 'available') {
+    try {
+        const container = document.querySelector('#matriculaAlumnoSearch').closest('.position-relative');
+        if (!container) return;
+
+        let statusEl = document.getElementById('matriculaAlumnoStatus');
+        if (!statusEl) {
+            statusEl = document.createElement('div');
+            statusEl.id = 'matriculaAlumnoStatus';
+            statusEl.style.marginTop = '6px';
+            statusEl.style.fontWeight = '600';
+            statusEl.style.display = 'inline-block';
+            statusEl.style.padding = '4px 8px';
+            statusEl.style.borderRadius = '12px';
+            statusEl.style.fontSize = '12px';
+            container.appendChild(statusEl);
+        }
+
+        if (type === 'matriculado') {
+            statusEl.textContent = message || 'Ya matriculado';
+            statusEl.style.backgroundColor = '#f8d7da';
+            statusEl.style.color = '#842029';
+        } else {
+            statusEl.textContent = message || 'Disponible';
+            statusEl.style.backgroundColor = '#d1e7dd';
+            statusEl.style.color = '#0f5132';
+        }
+
+        // Efecto blink: alternar visibilidad 6 veces en 3s
+        let flashes = 0;
+        statusEl.style.visibility = 'visible';
+        const blinkInterval = setInterval(() => {
+            statusEl.style.visibility = (statusEl.style.visibility === 'hidden') ? 'visible' : 'hidden';
+            flashes += 1;
+            if (flashes >= 6) {
+                clearInterval(blinkInterval);
+                statusEl.style.visibility = 'visible';
+            }
+        }, 500);
+    } catch (err) {
+        console.warn('No se pudo mostrar estado del alumno:', err);
+    }
+}
+
+/**
+ * Evalúa el alumno actualmente seleccionado (valor hidden) y actualiza el estado UI.
+ */
+async function evaluateSelectedAlumnoStatus() {
+    const alumnoId = document.getElementById('matriculaAlumno').value;
+    if (!alumnoId) return;
+    const alumno = alumnos.find(a => a.id === alumnoId);
+    if (!alumno) return;
+
+    const submitBtn = document.querySelector('#formMatricula button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+        const ya = await checkAlumnoMatriculado(alumno);
+        if (ya) {
+            showAlumnoStatus('Este alumno ya está matriculado en la clase seleccionada', 'matriculado');
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            showAlumnoStatus('Disponible para matricular', 'available');
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    } catch (err) {
+        console.warn('Error verificando estado seleccionado:', err);
+        if (submitBtn) submitBtn.disabled = false;
     }
 }
 
@@ -286,7 +467,16 @@ async function loadClases() {
             const rawClases = result.data.clases || result.data || [];
             console.log('📋 Clases en bruto:', rawClases);
             
-            clases = rawClases.filter(c => c.status === 'ACTIVO' || c.status === 'ACTIVA');
+            // Normalizar IDs y campos relacionados a string
+            clases = rawClases
+                .filter(c => c.status === 'ACTIVO' || c.status === 'ACTIVA')
+                .map(c => Object.assign({}, c, {
+                    id: String(c.id),
+                    curso_id: c.curso_id != null ? String(c.curso_id) : c.curso_id,
+                    seccion_id: c.seccion_id != null ? String(c.seccion_id) : c.seccion_id,
+                    periodo_id: c.periodo_id != null ? String(c.periodo_id) : c.periodo_id,
+                    docente_user_id: c.docente_user_id != null ? String(c.docente_user_id) : c.docente_user_id
+                }));
             console.log(`✅ Clases cargadas: ${clases.length}`);
             console.log('🎯 Clases filtradas:', clases);
         } else {
@@ -306,7 +496,7 @@ async function loadCursos() {
     try {
         const result = await AcademicoService.listCursos(0, 100);
         if (result.success) {
-            cursos = result.data.cursos || result.data;
+            cursos = (result.data.cursos || result.data || []).map(c => Object.assign({}, c, { id: String(c.id) }));
         }
     } catch (error) {
         console.error('Error loading cursos:', error);
@@ -320,7 +510,7 @@ async function loadSecciones() {
     try {
         const result = await AcademicoService.listSecciones(0, 100);
         if (result.success) {
-            secciones = result.data.secciones || result.data;
+            secciones = (result.data.secciones || result.data || []).map(s => Object.assign({}, s, { id: String(s.id), grado_id: s.grado_id != null ? String(s.grado_id) : s.grado_id }));
         }
     } catch (error) {
         console.error('Error loading secciones:', error);
@@ -337,7 +527,7 @@ async function loadPeriodos() {
     try {
         const result = await AcademicoService.listPeriodos(0, 100);
         if (result.success) {
-            periodos = result.data.periodos || result.data;
+            periodos = (result.data.periodos || result.data || []).map(p => Object.assign({}, p, { id: String(p.id) }));
             populatePeriodosFilter();
 
             // Auto-seleccionar periodo actual
@@ -415,7 +605,7 @@ async function loadGrados() {
     try {
         const result = await AcademicoService.listGrados(0, 100);
         if (result.success) {
-            grados = result.data.grados || result.data;
+            grados = (result.data.grados || result.data || []).map(g => Object.assign({}, g, { id: String(g.id) }));
         }
     } catch (error) {
         console.error('Error loading grados:', error);
@@ -540,35 +730,27 @@ async function loadMatriculas() {
     `;
 
     try {
-        const result = await PersonasService.listMatriculas(0, 100);
+        const offset = (currentPage - 1) * itemsPerPage;
+        const result = await PersonasService.listMatriculas(offset, itemsPerPage, null, claseId, null, searchTerm, estado);
 
         if (result.success) {
-            matriculas = result.data.matriculas || result.data;
+            // Normalizar IDs a string para consistencia con otros arrays
+            matriculas = (result.data.matriculas || result.data || []).map(m => Object.assign({}, m, {
+                id: String(m.id),
+                alumno_id: m.alumno_id != null ? String(m.alumno_id) : m.alumno_id,
+                clase_id: m.clase_id != null ? String(m.clase_id) : m.clase_id
+            }));
 
-            // Aplicar filtros
+            // Aplicar filtros (solo los que no soporta el backend aún, como periodo)
             let filteredMatriculas = matriculas.filter(m => {
                 let match = true;
 
-                if (searchTerm) {
-                    const alumno = alumnos.find(a => a.id === m.alumno_id);
-                    if (alumno) {
-                        const searchLower = searchTerm.toLowerCase();
-                        match = match && (
-                            alumno.nombres.toLowerCase().includes(searchLower) ||
-                            alumno.apellidos.toLowerCase().includes(searchLower) ||
-                            alumno.codigo_alumno?.toLowerCase().includes(searchLower)
-                        );
-                    }
-                }
-
-                if (claseId) match = match && m.clase_id === claseId;
-
+                // Search, Clase y Estado ya se filtran en backend
+                
                 if (periodoId) {
                     const clase = clases.find(c => c.id === m.clase_id);
                     match = match && clase?.periodo_id === periodoId;
                 }
-
-                if (estado) match = match && m.status === estado;
 
                 return match;
             });
@@ -577,6 +759,10 @@ async function loadMatriculas() {
             filteredMatriculas.sort((a, b) => new Date(b.fecha_matricula) - new Date(a.fecha_matricula));
 
             displayMatriculas(filteredMatriculas);
+
+            // Renderizar controles de paginación si el backend devuelve total
+            const total = result.data.total || filteredMatriculas.length;
+            renderPagination(total);
         } else {
             throw new Error(result.error);
         }
@@ -626,7 +812,7 @@ function displayMatriculas(matriculasToDisplay) {
         const periodoNombre = periodo?.nombre || '<span class="text-muted">?</span>';
 
         return `
-            <tr>
+            <tr id="matricula-row-${matricula.id}" data-id="${matricula.id}">
                 <td class="fw-bold">${alumnoNombre}</td>
                 <td>${cursoNombre}</td>
                 <td><span class="badge bg-primary">${seccionNombre}</span></td>
@@ -646,6 +832,137 @@ function displayMatriculas(matriculasToDisplay) {
             </tr>
         `;
     }).join('');
+}
+
+/**
+ * Renderiza controles de paginación y selector de tamaño de página
+ */
+function renderPagination(totalItems) {
+    try {
+        const containerId = 'matriculasPagination';
+        let container = document.getElementById(containerId);
+        const table = document.getElementById('matriculasTableBody');
+
+        if (!container) {
+            // Crear contenedor y añadir después de la tabla
+            container = document.createElement('div');
+            container.id = containerId;
+            container.className = 'd-flex justify-content-between align-items-center mt-3';
+            const tableElem = table.closest('table') || table.parentElement;
+            tableElem.parentNode.insertBefore(container, tableElem.nextSibling);
+        }
+
+        // Calcular páginas
+        const total = Number(totalItems) || 0;
+        const pageSize = Number(itemsPerPage);
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+        // Limitar currentPage
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        // Construir HTML simple: Prev | Página X de Y | Next  + page size select
+        container.innerHTML = '';
+
+        const left = document.createElement('div');
+        left.className = 'pagination-left';
+
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'btn btn-sm btn-outline-primary me-2';
+        prevBtn.textContent = '« Prev';
+        prevBtn.disabled = currentPage <= 1;
+        prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; loadMatriculas(); } };
+
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'btn btn-sm btn-outline-primary ms-2';
+        nextBtn.textContent = 'Next »';
+        nextBtn.disabled = currentPage >= totalPages;
+        nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; loadMatriculas(); } };
+
+        const pageInfo = document.createElement('span');
+        pageInfo.className = 'mx-2 text-muted';
+        pageInfo.textContent = `Página ${currentPage} de ${totalPages} • ${total} registros`;
+
+        left.appendChild(prevBtn);
+        left.appendChild(pageInfo);
+        left.appendChild(nextBtn);
+
+        const right = document.createElement('div');
+        right.className = 'pagination-right d-flex align-items-center';
+
+        const label = document.createElement('small');
+        label.className = 'me-2 text-muted';
+        label.textContent = 'Tamaño:';
+
+        const select = document.createElement('select');
+        select.className = 'form-select form-select-sm';
+        select.style.width = 'auto';
+        [10,15,20].forEach(n => {
+            const opt = document.createElement('option');
+            opt.value = n;
+            opt.textContent = `${n}`;
+            if (n === Number(itemsPerPage)) opt.selected = true;
+            select.appendChild(opt);
+        });
+        select.onchange = function() {
+            itemsPerPage = Number(this.value);
+            currentPage = 1;
+            loadMatriculas();
+        };
+
+        right.appendChild(label);
+        right.appendChild(select);
+
+        container.appendChild(left);
+        container.appendChild(right);
+    } catch (err) {
+        console.warn('No se pudo renderizar paginación:', err);
+    }
+}
+
+/**
+ * Resalta visualmente una matrícula y hace scroll hacia ella.
+ * Si no encuentra la fila por id, intenta buscar por alumno+clase+fecha.
+ */
+function highlightAndScrollMatricula(matriculaId, alumnoId = null, claseId = null, fecha = null) {
+    try {
+        let row = document.getElementById(`matricula-row-${matriculaId}`);
+
+        if (!row && alumnoId && claseId && fecha) {
+            // Buscar fila por coincidencia de columnas (caso donde el id no estaba presente en el DOM)
+            const rows = Array.from(document.querySelectorAll('#matriculasTableBody tr'));
+            for (const r of rows) {
+                // extraer valores de columna: alumno (col 0), clase/curso (col1), fecha (col4)
+                const cols = r.querySelectorAll('td');
+                const fechaTexto = cols[4]?.textContent?.trim();
+                if (!fechaTexto) continue;
+
+                // comparar fecha aproximada (ISO vs formato)
+                if (formatDate(fecha) === fechaTexto) {
+                    // intentar obtener alumno id por texto
+                    row = r;
+                    break;
+                }
+            }
+        }
+
+        if (!row) return;
+
+        // Aplicar estilo de resaltado temporal
+        const originalBg = row.style.backgroundColor;
+        row.style.transition = 'background-color 0.4s ease';
+        row.style.backgroundColor = '#fff3cd'; // tono amarillo suave
+
+        // Hacer scroll y foco
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.focus && row.focus();
+
+        // Remover el resaltado luego de 3.5s
+        setTimeout(() => {
+            row.style.backgroundColor = originalBg || '';
+        }, 3500);
+    } catch (err) {
+        console.warn('No se pudo resaltar la matrícula:', err);
+    }
 }
 
 /**
@@ -676,13 +993,67 @@ async function handleSubmitMatricula(e) {
 
             // Cerrar modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalMatricula'));
-            modal.hide();
+            modal && modal.hide();
 
-            // Recargar tabla
+            // Procesar relaciones familiares si existen (opcional)
+            try {
+                await procesarRelacionesFamiliares(result.data?.alumno_id || matriculaData.alumno_id);
+            } catch (relErr) {
+                console.warn('Error procesando relaciones familiares:', relErr);
+            }
+
+            // Recargar alumnos y clases primero para asegurar relaciones y nombres
+            try {
+                await Promise.all([loadAlumnos(), loadClases()]);
+            } catch (preLoadErr) {
+                console.warn('Advertencia: no se pudieron recargar alumnos/clases antes de refrescar matrículas', preLoadErr);
+            }
+
+            // Asegurar que los filtros del admin muestren la clase/periodo creados
+            try {
+                const claseIdFromResult = result.data?.clase_id || matriculaData.clase_id;
+                if (claseIdFromResult) {
+                    const claseObj = clases.find(c => c.id === String(claseIdFromResult));
+                    if (claseObj) {
+                        const periodoIdFromClase = claseObj.periodo_id;
+                        const filterClaseElem = document.getElementById('filterClase');
+                        const filterPeriodoElem = document.getElementById('filterPeriodo');
+                        if (filterClaseElem) filterClaseElem.value = claseObj.id;
+                        if (filterPeriodoElem && periodoIdFromClase) filterPeriodoElem.value = periodoIdFromClase;
+                    }
+                }
+            } catch (filterErr) {
+                console.warn('No se pudieron actualizar filtros para mostrar la clase creada:', filterErr);
+            }
+
+            // Finalmente recargar la tabla para reflejar el nuevo estado del servidor
             await loadMatriculas();
-        } else {
-            throw new Error(result.error);
+
+            // Si el backend retornó el id de la matrícula creada, resaltar y hacer scroll hacia ella
+            const createdId = result.data?.id;
+            if (createdId) {
+                // esperar un tick para asegurarnos que la tabla se renderizó
+                setTimeout(() => highlightAndScrollMatricula(createdId, result.data?.alumno_id, result.data?.clase_id, result.data?.fecha_matricula), 150);
+            }
+            return;
         }
+
+        // Si el backend devolvió un status, manejamos casos especiales (ej: 409 Conflict)
+        if (result.status === 409) {
+            // Mostrar el mensaje exacto del servidor y recargar la lista para sincronizar
+            showToast(result.error || 'Conflicto: matrícula duplicada', 'warning');
+            // También recargar alumnos y clases por si algo cambió en los recursos relacionados
+            try {
+                await Promise.all([loadAlumnos(), loadClases()]);
+            } catch (preLoadErr) {
+                console.warn('Advertencia: no se pudieron recargar alumnos/clases tras conflicto', preLoadErr);
+            }
+            await loadMatriculas();
+            return;
+        }
+
+        // Mensaje genérico para otros errores
+        throw new Error(result.error || 'Error al crear matrícula');
     } catch (error) {
         console.error('Error saving matricula:', error);
         showToast(error.message || 'Error al registrar la matrícula', 'error');
@@ -725,40 +1096,7 @@ function toggleSidebar() {
     document.querySelector('.wrapper').classList.toggle('sidebar-collapsed');
 }
 
-/**
- * Maneja el submit del formulario de matrícula
- */
-async function handleSubmitMatricula(e) {
-    e.preventDefault();
-
-    const matriculaData = {
-        alumno_id: document.getElementById('matriculaAlumno').value,
-        clase_id: document.getElementById('matriculaClase').value,
-        fecha_matricula: document.getElementById('matriculaFecha').value,
-        observaciones: document.getElementById('matriculaObservaciones').value.trim() || null
-    };
-
-    if (!matriculaData.alumno_id || !matriculaData.clase_id || !matriculaData.fecha_matricula) {
-        showToast('Por favor completa todos los campos requeridos', 'error');
-        return;
-    }
-
-    try {
-        // Solo CREATE: el backend no soporta actualización de matrículas
-        const result = await PersonasService.createMatricula(matriculaData);
-        if (result.success) {
-            showToast('Matrícula creada correctamente', 'success');
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalMatricula'));
-            modal && modal.hide();
-            await loadMatriculas();
-        } else {
-            throw new Error(result.error);
-        }
-    } catch (error) {
-        console.error('Error saving matricula:', error);
-        showToast(error.message || 'Error al registrar la matrícula', 'error');
-    }
-}
+// (Nota: handler único ya definido más arriba — versión consolidada)
 
 // ============================================
 // GESTIÓN DE FAMILIARES EN MATRÍCULA
@@ -897,6 +1235,29 @@ function resetFamiliaresMatricula() {
     document.getElementById('familiaresAgregados').classList.add('d-none');
     document.getElementById('esPrincipalMatricula').checked = false;
     document.getElementById('tipoRelacionMatricula').selectedIndex = 0;
+
+    // Ocultar sección de padres existentes si estaba visible
+    const padresExistentes = document.getElementById('padresExistentesMatricula');
+    if (padresExistentes) {
+        padresExistentes.classList.add('d-none');
+        const lista = document.getElementById('listaPadresExistentes');
+        if (lista) lista.innerHTML = '';
+    }
+
+    // Ocultar/limpiar resumen de relaciones en el modal
+    try {
+        const relacionesSummaryEl = document.getElementById('matriculaRelacionesInfo');
+        if (relacionesSummaryEl) {
+            relacionesSummaryEl.textContent = '';
+            relacionesSummaryEl.classList.add('d-none');
+        }
+    } catch (e) {}
+
+    // Asegurar que la tarjeta de gestión dentro del modal esté visible
+    const gestionCard = document.querySelector('#modalMatricula .card.border-secondary');
+    if (gestionCard) {
+        gestionCard.classList.remove('d-none');
+    }
 }
 
 /**
@@ -934,4 +1295,134 @@ async function procesarRelacionesFamiliares(alumnoId) {
     
     showToast('Info', `${familiaresPendientes.length} relación(es) familiar(es) creadas`, 'info');
     familiaresPendientes = []; // Limpiar después de procesar
+}
+
+/**
+ * Carga los padres/tutores ya vinculados a un alumno y ajusta la UI:
+ * - Si existen padres: muestra `padresExistentesMatricula` con la lista y oculta la tarjeta de gestión.
+ * - Si no existen padres: muestra la tarjeta de gestión y oculta el listado de padres existentes.
+ */
+async function loadPadresForAlumno(alumnoId) {
+    if (!alumnoId) return;
+
+    const gestionCard = document.querySelector('#modalMatricula .card.border-secondary');
+    const padresContainer = document.getElementById('padresExistentesMatricula');
+    const listaPadres = document.getElementById('listaPadresExistentes');
+
+    try {
+        const res = await PersonasService.getPadresDeAlumno(alumnoId);
+        // DEBUG: imprimir respuesta cruda del servicio para diagnosticar formatos inesperados
+        try { console.debug('loadPadresForAlumno -> raw response for alumno', alumnoId, res); } catch (e) {}
+        if (!res.success) throw new Error(res.error || 'Error cargando relaciones');
+
+        // Normalizar diferentes formatos de respuesta que el backend podría devolver:
+        // - { relaciones: [ { padre: {...}, tipo_relacion, es_contacto_principal } ] }
+        // - { padres: [ {...} ] }
+        // - [ { padre:... } ] o [ { dni:..., nombres:... } ]
+        let relaciones = [];
+        if (Array.isArray(res.data)) relaciones = res.data;
+        else if (Array.isArray(res.data?.relaciones)) relaciones = res.data.relaciones;
+        else if (Array.isArray(res.data?.padres)) relaciones = res.data.padres;
+        else if (res.data && typeof res.data === 'object') {
+            // Algunas respuestas pueden venir como { relaciones: {...} } o { padres: {...} }
+            // Intentar extraer cualquier array dentro de data
+            relaciones = Object.values(res.data).find(v => Array.isArray(v)) || [];
+        }
+
+        // Mapear relaciones a elementos legibles de padre
+        const padresList = relaciones.map(item => {
+            // item puede ser: { padre: {...}, tipo_relacion, es_contacto_principal }
+            // o directamente un objeto padre { dni, nombres, apellidos }
+            const padreObj = item?.padre || item?.padre_id ? item.padre || item : item;
+            const tipo = item?.tipo_relacion || item?.relation_type || '';
+            const esPrincipal = !!(item?.es_contacto_principal || item?.is_principal || false);
+            return { padre: padreObj, tipo_relacion: tipo, es_contacto_principal: esPrincipal };
+        }).filter(p => p && (p.padre && (p.padre.dni || p.padre.nombres || p.padre.apellidos)));
+
+        try { console.debug('loadPadresForAlumno -> normalized padresList for alumno', alumnoId, padresList); } catch (e) {}
+
+        // Actualizar campo resumen de relaciones en el modal (debajo del campo alumno)
+        try {
+            const relacionesSummaryEl = document.getElementById('matriculaRelacionesInfo');
+            if (relacionesSummaryEl) {
+                if (padresList.length > 0) {
+                    const parts = padresList.map(r => {
+                        const padre = r.padre || {};
+                        const apellidos = padre.apellido_paterno || padre.apellidos || padre.apellido || '';
+                        const nombres = padre.nombres || padre.nombre || '';
+                        const displayName = [apellidos, nombres].filter(Boolean).join(', ');
+                        const dniText = padre.dni ? ` (${padre.dni})` : '';
+                        const tipo = r.tipo_relacion || r.relation_type || '';
+                        return `${tipo}${tipo ? ':' : ''} ${displayName}${dniText}`.trim();
+                    });
+                    relacionesSummaryEl.textContent = parts.join(' • ');
+                    relacionesSummaryEl.classList.remove('d-none');
+                } else {
+                    relacionesSummaryEl.textContent = '';
+                    relacionesSummaryEl.classList.add('d-none');
+                }
+            }
+        } catch (e) {
+            console.warn('No se pudo actualizar el resumen de relaciones:', e);
+        }
+
+        if (padresList.length > 0) {
+            if (listaPadres) {
+                listaPadres.innerHTML = padresList.map(r => {
+                    const padre = r.padre || {};
+                    const apellido = padre.apellido_paterno || padre.apellidos || padre.apellido || '';
+                    const nombres = padre.nombres || padre.nombre || '';
+                    const displayName = [apellido, nombres].filter(Boolean).join(', ');
+                    const tipo = r.tipo_relacion ? ` • ${r.tipo_relacion}` : '';
+                    const contacto = r.es_contacto_principal ? '<span class="badge bg-success ms-2">Principal</span>' : '';
+                    return `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${displayName}</strong>
+                                <br><small class="text-muted">DNI: ${padre.dni || ''}${tipo}</small>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                ${contacto}
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-3 btn-select-padre"
+                                    data-padre-id="${padre.id || ''}"
+                                    data-padre-nombre="${escapeHtml(displayName)}"
+                                    data-padre-dni="${padre.dni || ''}"
+                                    data-padre-principal="${r.es_contacto_principal ? 'true' : 'false'}"
+                                    data-padre-tipo="${r.tipo_relacion || ''}">
+                                    Seleccionar
+                                </button>
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+
+                // Attach event listeners to the select buttons
+                listaPadres.querySelectorAll('.btn-select-padre').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const padreId = this.dataset.padreId;
+                        const padreNombre = this.dataset.padreNombre;
+                        const padreDni = this.dataset.padreDni;
+                        const padrePrincipal = this.dataset.padrePrincipal === 'true';
+                        const padreTipo = this.dataset.padreTipo || '';
+                        try { selectPadreFromList(padreId, padreNombre, padreDni, padrePrincipal, padreTipo); } catch (e) { console.warn('selectPadreFromList error', e); }
+                    });
+                });
+            }
+            if (padresContainer) padresContainer.classList.remove('d-none');
+            if (gestionCard) gestionCard.classList.add('d-none');
+        } else {
+            // No tiene padres vinculados: mostrar la gestión y ocultar el listado
+            if (listaPadres) listaPadres.innerHTML = '';
+            if (padresContainer) padresContainer.classList.add('d-none');
+            if (gestionCard) gestionCard.classList.remove('d-none');
+            // Asegurar que el resumen también esté oculto
+            try { const relacionesSummaryEl = document.getElementById('matriculaRelacionesInfo'); if (relacionesSummaryEl) { relacionesSummaryEl.textContent = ''; relacionesSummaryEl.classList.add('d-none'); } } catch(e){}
+        }
+    } catch (err) {
+        console.warn('Error en loadPadresForAlumno:', err);
+        // En caso de error dejar la gestión visible para permitir agregar manualmente
+        if (padresContainer) padresContainer.classList.add('d-none');
+        if (gestionCard) gestionCard.classList.remove('d-none');
+        try { const relacionesSummaryEl = document.getElementById('matriculaRelacionesInfo'); if (relacionesSummaryEl) { relacionesSummaryEl.textContent = ''; relacionesSummaryEl.classList.add('d-none'); } } catch(e){}
+    }
 }

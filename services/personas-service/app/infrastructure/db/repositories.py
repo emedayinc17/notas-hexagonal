@@ -187,6 +187,29 @@ class SqlAlchemyRelacionPadreAlumnoRepository(RelacionPadreAlumnoRepository):
             RelacionPadreAlumnoModel.is_deleted == False
         ).all()
         return [relacion_model_to_domain(m) for m in models]
+    
+    def find_by_padre_and_alumno_including_deleted(self, padre_id: str, alumno_id: str) -> Optional[RelacionPadreAlumno]:
+        """Busca una relación específica entre padre y alumno, incluyendo las eliminadas (soft deleted)"""
+        model = self.session.query(RelacionPadreAlumnoModel).filter(
+            RelacionPadreAlumnoModel.padre_id == padre_id,
+            RelacionPadreAlumnoModel.alumno_id == alumno_id
+        ).first()
+        return relacion_model_to_domain(model) if model else None
+    
+    def update(self, relacion: RelacionPadreAlumno) -> RelacionPadreAlumno:
+        """Actualiza una relación existente"""
+        model = self.session.query(RelacionPadreAlumnoModel).filter(
+            RelacionPadreAlumnoModel.id == relacion.id
+        ).first()
+        
+        if model:
+            model.tipo_relacion = relacion.tipo_relacion
+            model.es_contacto_principal = relacion.es_contacto_principal
+            model.is_deleted = relacion.is_deleted
+            self.session.commit()
+            self.session.refresh(model)
+            return relacion_model_to_domain(model)
+        return relacion
 
 
 class SqlAlchemyMatriculaClaseRepository(MatriculaClaseRepository):

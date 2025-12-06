@@ -1,0 +1,12 @@
+﻿[
+  {
+    "matricula_clase_id":"00000000-0000-0000-0000-000000000000",
+    "tipo_evaluacion_id":"00000000-0000-0000-0000-000000000000",
+    "periodo_id":"00000000-0000-0000-0000-000000000000",
+    "escala_id":"00000000-0000-0000-0000-000000000000",
+    "valor_numerico":12.5,
+    "fecha_registro":"2025-05-01",
+    "columna_nota":"N1",
+    "observaciones":"prueba desde script"
+  }
+]

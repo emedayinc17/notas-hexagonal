@@ -43,6 +43,10 @@
                     </button>
 
                     <div class="ms-auto d-flex align-items-center">
+                        <div id="notificationWrapper" class="notification-badge me-3" style="display:none; align-items:center;">
+                            <i class="bi bi-bell fs-5"></i>
+                            <span id="notificationCount" class="badge bg-danger" style="display:none"></span>
+                        </div>
                         <div class="dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
                                 <div class="avatar me-2">
@@ -83,17 +87,11 @@
                                     <option value="">Todos los periodos</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label">Curso</label>
                                 <select class="form-select" id="filterCurso">
                                     <option value="">Todos los cursos</option>
                                 </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label d-block">&nbsp;</label>
-                                <button class="btn btn-primary w-100" onclick="loadClases()">
-                                    <i class="bi bi-search me-2"></i>Buscar
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -143,5 +141,6 @@
     <script src="../js/api.js"></script>
     <script src="../js/backdrop-cleaner.js"></script>
     <script src="../js/mis-clases.js"></script>
+    <script src="../js/dashboard.js"></script>
 </body>
 </html>

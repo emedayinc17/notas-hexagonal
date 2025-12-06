@@ -2,9 +2,10 @@
 // GESTIÓN DE GRADOS
 // ============================================
 
-let grados = [];
+let grados = []; // Todos los grados cargados
+let filteredGrados = []; // Grados filtrados
 let currentPage = 1;
-const itemsPerPage = 10;
+let itemsPerPage = 10;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Verificar autenticación y rol ADMIN
@@ -13,6 +14,11 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('Acceso denegado', 'Solo administradores pueden acceder a esta sección', 'error');
         window.location.href = '/pages/dashboard.html';
         return;
+    }
+
+    // Cargar configuración
+    if (typeof AppSettings !== 'undefined') {
+        itemsPerPage = AppSettings.getSetting('pagination.itemsPerPage', 10);
     }
 
     // Cargar datos del usuario en navbar
@@ -26,9 +32,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listeners
     document.getElementById('formGrado').addEventListener('submit', handleSubmitGrado);
-    document.getElementById('searchInput').addEventListener('input', debounce(loadGrados, 500));
-    document.getElementById('filterNivel').addEventListener('change', loadGrados);
-    document.getElementById('filterEstado').addEventListener('change', loadGrados);
+    document.getElementById('searchInput').addEventListener('input', debounce(() => { currentPage = 1; applyFilters(); }, 300));
+    document.getElementById('filterNivel').addEventListener('change', () => { currentPage = 1; applyFilters(); });
+    document.getElementById('filterEstado').addEventListener('change', () => { currentPage = 1; applyFilters(); });
     document.getElementById('sidebarCollapse').addEventListener('click', toggleSidebar);
 
     // Reset form when modal closes
@@ -64,8 +70,7 @@ function loadSidebarMenu() {
         { page: 'clases.html', label: 'Clases', icon: 'door-open-fill' },
         { page: 'alumnos.html', label: 'Alumnos', icon: 'people-fill' },
         { page: 'matriculas.html', label: 'Matrículas', icon: 'journal-check' },
-        { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear' },
-        { page: 'notas.html', label: 'Notas', icon: 'clipboard-check' }
+        { page: 'usuarios.html', label: 'Usuarios', icon: 'person-gear' }
     ];
 
     const sidebarMenu = document.getElementById('sidebarMenu');
@@ -83,10 +88,6 @@ function loadSidebarMenu() {
  * Carga los grados desde el API
  */
 async function loadGrados() {
-    const searchTerm = document.getElementById('searchInput').value;
-    const nivel = document.getElementById('filterNivel').value;
-    const estado = document.getElementById('filterEstado').value;
-
     const tbody = document.getElementById('gradosTableBody');
     tbody.innerHTML = `
         <tr>
@@ -99,40 +100,12 @@ async function loadGrados() {
     `;
 
     try {
-        const result = await AcademicoService.listGrados(0, 100);
+        // Cargar todos (limit alto) para paginación en cliente
+        const result = await AcademicoService.listGrados(0, 1000);
         
         if (result.success) {
             grados = result.data.grados || result.data;
-            
-            // Aplicar filtros
-            let filteredGrados = grados.filter(g => {
-                let match = true;
-                
-                if (searchTerm) {
-                    match = match && g.nombre.toLowerCase().includes(searchTerm.toLowerCase());
-                }
-                
-                if (nivel) {
-                    match = match && g.nivel === nivel;
-                }
-                
-                if (estado) {
-                    match = match && g.status === estado;
-                }
-                
-                return match;
-            });
-
-            // Ordenar por nivel y orden
-            filteredGrados.sort((a, b) => {
-                const nivelOrder = { 'INICIAL': 1, 'PRIMARIA': 2, 'SECUNDARIA': 3 };
-                if (nivelOrder[a.nivel] !== nivelOrder[b.nivel]) {
-                    return nivelOrder[a.nivel] - nivelOrder[b.nivel];
-                }
-                return a.orden - b.orden;
-            });
-
-            displayGrados(filteredGrados);
+            applyFilters();
         } else {
             throw new Error(result.error);
         }
@@ -151,12 +124,52 @@ async function loadGrados() {
 }
 
 /**
- * Muestra los grados en la tabla
+ * Aplica filtros y paginación
  */
-function displayGrados(gradosToDisplay) {
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const nivel = document.getElementById('filterNivel').value;
+    const estado = document.getElementById('filterEstado').value;
+
+    // Filtrar
+    filteredGrados = grados.filter(g => {
+        let match = true;
+        
+        if (searchTerm) {
+            match = match && g.nombre.toLowerCase().includes(searchTerm);
+        }
+        
+        if (nivel) {
+            match = match && g.nivel === nivel;
+        }
+        
+        if (estado) {
+            match = match && g.status === estado;
+        }
+        
+        return match;
+    });
+
+    // Ordenar por nivel y orden
+    filteredGrados.sort((a, b) => {
+        const nivelOrder = { 'INICIAL': 1, 'PRIMARIA': 2, 'SECUNDARIA': 3 };
+        if (nivelOrder[a.nivel] !== nivelOrder[b.nivel]) {
+            return (nivelOrder[a.nivel] || 99) - (nivelOrder[b.nivel] || 99);
+        }
+        return a.orden - b.orden;
+    });
+
+    renderTable();
+    renderPagination();
+}
+
+/**
+ * Renderiza la tabla con la página actual
+ */
+function renderTable() {
     const tbody = document.getElementById('gradosTableBody');
     
-    if (gradosToDisplay.length === 0) {
+    if (filteredGrados.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="text-center py-4 text-muted">
@@ -168,7 +181,12 @@ function displayGrados(gradosToDisplay) {
         return;
     }
 
-    tbody.innerHTML = gradosToDisplay.map(grado => `
+    // Paginación
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageData = filteredGrados.slice(start, end);
+
+    tbody.innerHTML = pageData.map(grado => `
         <tr>
             <td><span class="badge bg-secondary">${grado.orden}</span></td>
             <td class="fw-bold">${grado.nombre}</td>
@@ -191,6 +209,84 @@ function displayGrados(gradosToDisplay) {
             </td>
         </tr>
     `).join('');
+}
+
+/**
+ * Renderiza la paginación
+ */
+function renderPagination() {
+    let container = document.getElementById('pagination');
+    const table = document.getElementById('gradosTableBody');
+
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'pagination';
+        container.className = 'd-flex justify-content-between align-items-center mt-3';
+        const tableElem = table.closest('table') || table.parentElement;
+        tableElem.parentNode.insertBefore(container, tableElem.nextSibling);
+    }
+
+    const total = filteredGrados.length;
+    const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
+
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    container.innerHTML = '';
+
+    // Lado izquierdo: Botones y Texto
+    const left = document.createElement('div');
+    left.className = 'pagination-left';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'btn btn-sm btn-outline-primary me-2';
+    prevBtn.textContent = '« Prev';
+    prevBtn.disabled = currentPage <= 1;
+    prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderTable(); renderPagination(); } };
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn btn-sm btn-outline-primary ms-2';
+    nextBtn.textContent = 'Next »';
+    nextBtn.disabled = currentPage >= totalPages;
+    nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderTable(); renderPagination(); } };
+
+    const pageInfo = document.createElement('span');
+    pageInfo.className = 'mx-2 text-muted';
+    pageInfo.textContent = `Página ${currentPage} de ${totalPages} • ${total} registros`;
+
+    left.appendChild(prevBtn);
+    left.appendChild(pageInfo);
+    left.appendChild(nextBtn);
+
+    // Lado derecho: Selector de tamaño
+    const right = document.createElement('div');
+    right.className = 'pagination-right d-flex align-items-center';
+
+    const label = document.createElement('small');
+    label.className = 'me-2 text-muted';
+    label.textContent = 'Tamaño:';
+
+    const select = document.createElement('select');
+    select.className = 'form-select form-select-sm';
+    select.style.width = 'auto';
+    [10, 15, 20, 50].forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = `${n}`;
+        if (n === Number(itemsPerPage)) opt.selected = true;
+        select.appendChild(opt);
+    });
+    select.onchange = function() {
+        itemsPerPage = Number(this.value);
+        currentPage = 1;
+        renderTable();
+        renderPagination();
+    };
+
+    right.appendChild(label);
+    right.appendChild(select);
+
+    container.appendChild(left);
+    container.appendChild(right);
 }
 
 /**

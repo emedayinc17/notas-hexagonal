@@ -123,13 +123,38 @@ async def create_alumno(
 
 @router.get("/alumnos")
 async def list_alumnos(
+    search: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    from app.infrastructure.db.repositories import SqlAlchemyAlumnoRepository
-    repo = SqlAlchemyAlumnoRepository(db)
-    alumnos = repo.find_all(offset=offset, limit=limit)
+    from app.infrastructure.db.models import AlumnoModel
+    from sqlalchemy import func, or_
+
+    # Construir query base
+    query = db.query(AlumnoModel).filter(AlumnoModel.is_deleted == False)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                AlumnoModel.nombres.like(search_term),
+                AlumnoModel.apellido_paterno.like(search_term),
+                AlumnoModel.apellido_materno.like(search_term),
+                AlumnoModel.codigo_alumno.like(search_term),
+                AlumnoModel.dni.like(search_term)
+            )
+        )
+
+    # Calcular total
+    try:
+        total_count = query.with_entities(func.count(AlumnoModel.id)).scalar() or 0
+    except Exception:
+        total_count = len(query.all())
+
+    # Paginación
+    alumnos = query.offset(offset).limit(limit).all()
+
     return {
         "alumnos": [
             {
@@ -149,8 +174,39 @@ async def list_alumnos(
                 "status": a.status,
             } for a in alumnos
         ],
-        "total": len(alumnos),
+        "total": int(total_count),
     }
+
+
+@router.get("/alumnos/next-codigo")
+async def get_next_codigo_alumno(db: Session = Depends(get_db)):
+    """Genera el siguiente código de alumno disponible en formato ALU + AÑO + NÚMERO"""
+    from datetime import datetime
+    from app.infrastructure.db.models import AlumnoModel
+    
+    # Obtener el año actual
+    current_year = datetime.now().year
+    prefix = f"ALU{current_year}"
+    
+    # Buscar el último código del año actual
+    last_alumno = db.query(AlumnoModel).filter(
+        AlumnoModel.codigo_alumno.like(f"{prefix}%")
+    ).order_by(AlumnoModel.codigo_alumno.desc()).first()
+    
+    if last_alumno:
+        # Extraer el número del último código (ej: ALU2025001 -> 001)
+        try:
+            last_number = int(last_alumno.codigo_alumno.replace(prefix, ""))
+            next_number = last_number + 1
+        except ValueError:
+            next_number = 1
+    else:
+        next_number = 1
+    
+    # Generar el nuevo código con padding de 3 dígitos
+    next_codigo = f"{prefix}{next_number:03d}"
+    
+    return {"codigo": next_codigo}
 
 
 @router.put("/alumnos/{alumno_id}")
@@ -479,6 +535,19 @@ async def link_padre_alumno(
             "tipo_relacion": relacion.tipo_relacion,
         }
     except Exception as e:
+        # Manejar IntegrityError de MySQL (relación duplicada)
+        from sqlalchemy.exc import IntegrityError
+        if isinstance(e, IntegrityError) or "IntegrityError" in str(type(e).__name__):
+            # Verificar si es por la constraint uk_padre_alumno
+            if "uk_padre_alumno" in str(e) or "Duplicate entry" in str(e):
+                return JSONResponse(
+                    status_code=status.HTTP_409_CONFLICT,
+                    content={
+                        "error": "RELATION_ALREADY_EXISTS", 
+                        "message": "Esta relación padre-alumno ya existe"
+                    }
+                )
+        
         # Manejar excepción de relación duplicada
         if "RelacionAlreadyExistsException" in str(type(e).__name__):
             return JSONResponse(
@@ -546,7 +615,20 @@ async def matricular_alumno(
     except DomainException as e:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"error": e.code, "message": e.message}
+            content={"error": e.code, "message": e.message},
+        )
+    except Exception as e:
+        # Handle duplicate matricula (unique constraint on alumno_id + clase_id)
+        from sqlalchemy.exc import IntegrityError
+        if isinstance(e, IntegrityError) or "Duplicate entry" in str(e):
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={"error": "MATRICULA_DUPLICADA", "message": "La matrícula ya existe para este alumno y clase."},
+            )
+        # Unexpected error
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "INTERNAL_ERROR", "message": str(e)},
         )
 
 
@@ -554,13 +636,48 @@ async def matricular_alumno(
 async def list_matriculas(
     alumno_id: Optional[str] = Query(None),
     clase_id: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
-    from app.infrastructure.db.repositories import SqlAlchemyMatriculaClaseRepository
-    repo = SqlAlchemyMatriculaClaseRepository(db)
-    matriculas = repo.find_all(alumno_id=alumno_id, clase_id=clase_id, offset=offset, limit=limit)
+    from app.infrastructure.db.models import MatriculaClaseModel, AlumnoModel
+    from sqlalchemy import func, or_
+
+    # Construir query base para poder calcular total y luego aplicar offset/limit
+    query = db.query(MatriculaClaseModel).filter(MatriculaClaseModel.is_deleted == False)
+    
+    if search:
+        # Join con AlumnoModel para buscar por nombre/código
+        query = query.join(AlumnoModel, MatriculaClaseModel.alumno_id == AlumnoModel.id)
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                AlumnoModel.nombres.like(search_term),
+                AlumnoModel.apellido_paterno.like(search_term),
+                AlumnoModel.apellido_materno.like(search_term),
+                AlumnoModel.codigo_alumno.like(search_term)
+            )
+        )
+
+    if alumno_id:
+        query = query.filter(MatriculaClaseModel.alumno_id == alumno_id)
+    if clase_id:
+        query = query.filter(MatriculaClaseModel.clase_id == clase_id)
+    if status:
+        query = query.filter(MatriculaClaseModel.status == status)
+
+    # Calcular total de coincidencias (sin limit/offset)
+    try:
+        total_count = query.with_entities(func.count(MatriculaClaseModel.id)).scalar() or 0
+    except Exception:
+        # Fallback simple si la función count falla por compatibilidad
+        total_count = len(query.all())
+
+    # Obtener los registros paginados
+    models = query.offset(offset).limit(limit).all()
+
     return {
         "matriculas": [
             {
@@ -569,9 +686,9 @@ async def list_matriculas(
                 "clase_id": m.clase_id,
                 "fecha_matricula": m.fecha_matricula.isoformat() if m.fecha_matricula else None,
                 "status": m.status,
-            } for m in matriculas
+            } for m in models
         ],
-        "total": len(matriculas),
+        "total": int(total_count),
     }
 
 
@@ -798,6 +915,48 @@ async def get_alumnos_por_clase(
             "total": len(alumnos_matriculados),
             "clase_id": clase_id
         }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "INTERNAL_ERROR", "message": str(e)}
+        )
+
+
+class ClaseIdsRequest(BaseModel):
+    clase_ids: list[str]
+
+
+@router.post("/matriculas/counts")
+async def get_matriculas_counts(
+    request: ClaseIdsRequest,
+    db: Session = Depends(get_db),
+):
+    """Obtener conteo de alumnos matriculados para una lista de clases"""
+    try:
+        from app.infrastructure.db.models import MatriculaClaseModel
+        from sqlalchemy import func
+        
+        if not request.clase_ids:
+            return {}
+
+        # Query para contar matrículas activas por clase
+        results = db.query(
+            MatriculaClaseModel.clase_id,
+            func.count(MatriculaClaseModel.id)
+        ).filter(
+            MatriculaClaseModel.clase_id.in_(request.clase_ids),
+            MatriculaClaseModel.status == 'ACTIVO',
+            MatriculaClaseModel.is_deleted == False
+        ).group_by(
+            MatriculaClaseModel.clase_id
+        ).all()
+        
+        # Convertir a diccionario {clase_id: count}
+        counts = {r[0]: r[1] for r in results}
+        
+        return counts
     except Exception as e:
         import traceback
         traceback.print_exc()

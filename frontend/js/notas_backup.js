@@ -1,7 +1,8 @@
 // notas.js - Gestión de Notas del Sistema
 // Refactorizado completamente para eliminar errores de sintaxis
 
-let currentUser = null;
+// Evitar redeclaraciones si otros scripts ya definieron `currentUser`
+if (typeof currentUser === 'undefined') currentUser = null;
 let tiposEvaluacion = [];
 let cursos = [];
 let secciones = [];

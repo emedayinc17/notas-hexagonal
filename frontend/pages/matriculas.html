@@ -41,6 +41,12 @@
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
                 <div class="container-fluid">
                     <button type="button" id="sidebarCollapse" class="btn btn-outline-secondary">
+                
+                        <!-- Padres/Tutores existentes (mostrados si el alumno ya tiene relaciones) -->
+                        <div id="padresExistentesMatricula" class="alert alert-info d-none mb-3">
+                            <h6 class="mb-2">Padres/Tutores vinculados:</h6>
+                            <ul class="list-group list-group-flush" id="listaPadresExistentes"></ul>
+                        </div>
                         <i class="bi bi-list"></i>
                     </button>
 
@@ -159,6 +165,8 @@
                                 </div>
                             </div>
                             <small class="text-muted">Escribe para buscar el alumno a matricular</small>
+                            <!-- Resumen de relaciones existentes (PADRE / MADRE / APODERADO) para el alumno seleccionado -->
+                            <div id="matriculaRelacionesInfo" class="small text-muted mt-2 d-none"></div>
                         </div>
 
                         <div class="mb-3">

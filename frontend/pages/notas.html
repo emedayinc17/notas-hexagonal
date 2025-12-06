@@ -50,6 +50,10 @@
                     </button>
 
                     <div class="ms-auto d-flex align-items-center">
+                        <div id="notificationWrapper" class="notification-badge me-3" style="display:none; align-items:center;">
+                            <i class="bi bi-bell fs-5"></i>
+                            <span id="notificationCount" class="badge bg-danger" style="display:none"></span>
+                        </div>
                         <div class="dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
                                 <div class="avatar me-2">
@@ -97,6 +101,24 @@
     <script src="../js/auth.js"></script>
     <script src="/js/notas-siagie.js"></script>
     <script src="/js/notas.js"></script>
+    <script src="../js/dashboard.js"></script>
 </body>
 
+<!-- Modal for managing notes -->
+<div class="modal fade" id="modalGestionarNotas" tabindex="-1" aria-labelledby="modalGestionarNotasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalGestionarNotasLabel"><span id="alumnoInfo"></span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="notasAlumnoContainer"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
 </html>

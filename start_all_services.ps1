@@ -4,8 +4,7 @@
 Write-Host "🚀 Iniciando Sistema de Gestión de Notas - Arquitectura Hexagonal" -ForegroundColor Cyan
 Write-Host "------------------------------------------------------------"
 
-$root = Get-Location
-$rootPath = $root.Path
+$rootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 # Función helper para iniciar servicio
 function Start-Service-Window {

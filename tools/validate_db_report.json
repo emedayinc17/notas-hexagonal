@@ -1,0 +1,95 @@
+{
+  "generated_at": "2025-12-02 19:38:43",
+  "services": {
+    "academico-service": {
+      "found_env": true,
+      "env_path": "services\\academico-service\\.env",
+      "db": {
+        "DB_HOST": "localhost",
+        "DB_PORT": "3306",
+        "DB_USER": "app_academico",
+        "DB_NAME": "sga_academico"
+      },
+      "result": {
+        "ok": true,
+        "error": null,
+        "duration_seconds": 0.006,
+        "current_user": "app_academico@localhost",
+        "grants": [
+          "GRANT USAGE ON *.* TO `app_academico`@`localhost`",
+          "GRANT SELECT, INSERT, UPDATE, DELETE ON `sga_academico`.* TO `app_academico`@`localhost`"
+        ]
+      }
+    },
+    "iam-service": {
+      "found_env": true,
+      "env_path": "services\\iam-service\\.env",
+      "db": {
+        "DB_HOST": "localhost",
+        "DB_PORT": "3306",
+        "DB_USER": "app_iam",
+        "DB_NAME": "sga_iam"
+      },
+      "result": {
+        "ok": true,
+        "error": null,
+        "duration_seconds": 0.023,
+        "current_user": "app_iam@localhost",
+        "grants": [
+          "GRANT USAGE ON *.* TO `app_iam`@`localhost`",
+          "GRANT ALL PRIVILEGES ON `ev_iam`.* TO `app_iam`@`localhost`",
+          "GRANT SELECT, INSERT, UPDATE, DELETE ON `sga_iam`.* TO `app_iam`@`localhost`"
+        ]
+      }
+    },
+    "notas-service": {
+      "found_env": true,
+      "env_path": "services\\notas-service\\.env",
+      "db": {
+        "DB_HOST": "localhost",
+        "DB_PORT": "3306",
+        "DB_USER": "app_notas",
+        "DB_NAME": "sga_notas"
+      },
+      "result": {
+        "ok": true,
+        "error": null,
+        "duration_seconds": 0.002,
+        "current_user": "app_notas@localhost",
+        "grants": [
+          "GRANT USAGE ON *.* TO `app_notas`@`localhost`",
+          "GRANT SELECT, INSERT, UPDATE, DELETE ON `sga_notas`.* TO `app_notas`@`localhost`",
+          "GRANT SELECT ON `sga_personas`.* TO `app_notas`@`localhost`",
+          "GRANT SELECT ON `sga_academico`.`escalas_calificacion` TO `app_notas`@`localhost`",
+          "GRANT SELECT ON `sga_academico`.`umbrales_alerta` TO `app_notas`@`localhost`",
+          "GRANT SELECT ON `sga_academico`.`valores_escala` TO `app_notas`@`localhost`"
+        ]
+      }
+    },
+    "personas-service": {
+      "found_env": true,
+      "env_path": "services\\personas-service\\.env",
+      "db": {
+        "DB_HOST": "localhost",
+        "DB_PORT": "3306",
+        "DB_USER": "app_personas",
+        "DB_NAME": "sga_personas"
+      },
+      "result": {
+        "ok": true,
+        "error": null,
+        "duration_seconds": 0.002,
+        "current_user": "app_personas@localhost",
+        "grants": [
+          "GRANT USAGE ON *.* TO `app_personas`@`localhost`",
+          "GRANT SELECT, INSERT, UPDATE, DELETE ON `sga_personas`.* TO `app_personas`@`localhost`"
+        ]
+      }
+    },
+    "shared": {
+      "found_env": false,
+      "checked": false,
+      "note": "No .env or .env.example found"
+    }
+  }
+}

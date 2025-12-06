@@ -43,22 +43,7 @@ class LoginUseCase:
         ip_address: str = None,
         user_agent: str = None,
     ) -> dict:
-        """
-        Autentica un usuario y genera un JWT token
-        
-        Args:
-            email: Email del usuario
-            password: Contraseña en texto plano
-            ip_address: IP del cliente (opcional)
-            user_agent: User agent del navegador (opcional)
-        
-        Returns:
-            Dict con: {access_token, token_type, user}
-        
-        Raises:
-            InvalidCredentialsException: Si las credenciales son incorrectas
-            UserInactiveException: Si el usuario está inactivo o bloqueado
-        """
+
         # Buscar usuario por email
         usuario = self.usuario_repository.find_by_email(email)
         if not usuario:
