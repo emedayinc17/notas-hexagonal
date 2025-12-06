@@ -3,16 +3,13 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential gcc && rm -rf /var/lib/apt/lists/*
 
-# allow service directory to be passed as build-arg
-ARG SERVICE_DIR=services/personas-service
-
 # Copy requirements from service directory and install
-COPY ${SERVICE_DIR}/requirements.txt ./
+COPY services/personas-service/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared package and service app
 COPY shared/ ./shared/
-COPY ${SERVICE_DIR}/app/ ./app/
+COPY services/personas-service/app/ ./app/
 
 EXPOSE 8003
 

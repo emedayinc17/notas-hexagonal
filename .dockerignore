@@ -40,8 +40,11 @@ Scripts/
 share/
 
 # Services (backend code)
-services/
-shared/
+# Include services and shared for building backend images from repo root
+!services/
+!services/**
+!shared/
+!shared/**
 
 # Database
 database/

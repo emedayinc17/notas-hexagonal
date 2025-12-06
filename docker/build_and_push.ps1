@@ -42,7 +42,9 @@ foreach ($svc in $services) {
         continue
     }
 
-    $dockerfilePath = Join-Path -Path $context -ChildPath $svc.dockerfile
+    # Dockerfile path should be under the service folder inside the repo root
+    $dockerfilePath = Join-Path -Path $repoRoot -ChildPath $svc.path
+    $dockerfilePath = Join-Path -Path $dockerfilePath -ChildPath $svc.dockerfile
     if (-not (Test-Path $dockerfilePath)){
         Write-Host "[warn] Dockerfile not found for $($svc.name) at $dockerfilePath" -ForegroundColor Yellow
         # Try default docker build context if no Dockerfile present
