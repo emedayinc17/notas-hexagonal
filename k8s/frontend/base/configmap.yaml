@@ -2,12 +2,15 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: frontend-config
-  namespace: eventos-peru
+  namespace: sga
+  labels:
+    app: sga-frontend
 data:
-  # This file will be mounted as /config.js in the nginx webroot.
-  # It should assign a global `window.__APP_CONFIG__` object used by the SPA at runtime.
+  # URL base del backend visto desde el navegador
+  FRONTEND_API_URL: "http://sga.emeday.inc"
+
+  # Este config.js se monta como archivo estático en el contenedor
   config.js: |
-    // Default runtime configuration for frontend (can be overridden in overlays)
-    window.__APP_CONFIG__ = {
-      VITE_API_BASE_URL: "/api"
+    window.APP_CONFIG = {
+      API_BASE: "http://sga.emeday.inc",
     };
