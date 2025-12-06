@@ -5,20 +5,15 @@ metadata:
   namespace: sga
   annotations:
     kubernetes.io/ingress.class: nginx
-    # 👇 HABILITAR REWRITE Y REGEX
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/use-regex: "true"
     
-    # 👇 CORS COMPLETO
+    # 👇 CORS actualizado para Azure
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "$http_origin"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"  # O tu IP de Azure
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,Accept"
     nginx.ingress.kubernetes.io/cors-expose-headers: "Content-Length,Content-Range"
-    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "http://sgaweb.emeday.inc"
-    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
-    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type, Accept, Origin, X-Requested-With"
     nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
     
     # 👇 CONFIGURACIÓN DE PROXY
@@ -57,11 +52,11 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: sga.emeday.inc
+  - http:  # Sin host específico
     http:
       paths:
       # ============================================
-      # 🔵 SERVICIO IAM (http://sga.emeday.inc/iam)
+      # 🔵 SERVICIO IAM (http://TU_IP/iam)
       # ============================================
       - path: /iam(/|$)(.*)
         pathType: ImplementationSpecific
@@ -75,7 +70,7 @@ spec:
             set $service_prefix "/iam";
           
       # ============================================
-      # 🟢 SERVICIO ACADÉMICO (http://sga.emeday.inc/academico)
+      # 🟢 SERVICIO ACADÉMICO (http://TU_IP/academico)
       # ============================================
       - path: /academico(/|$)(.*)
         pathType: ImplementationSpecific
@@ -89,7 +84,7 @@ spec:
             set $service_prefix "/academico";
           
       # ============================================
-      # 🟡 SERVICIO PERSONAS (http://sga.emeday.inc/personas)
+      # 🟡 SERVICIO PERSONAS (http://TU_IP/personas)
       # ============================================
       - path: /personas(/|$)(.*)
         pathType: ImplementationSpecific
@@ -103,7 +98,7 @@ spec:
             set $service_prefix "/personas";
           
       # ============================================
-      # 🔴 SERVICIO NOTAS (http://sga.emeday.inc/notas)
+      # 🔴 SERVICIO NOTAS (http://TU_IP/notas)
       # ============================================
       - path: /notas(/|$)(.*)
         pathType: ImplementationSpecific
@@ -115,18 +110,3 @@ spec:
         annotations:
           nginx.ingress.kubernetes.io/configuration-snippet: |
             set $service_prefix "/notas";
-          
-      # ============================================
-      # 🏠 RUTA RAIZ - Redirige a IAM Docs (Opcional)
-      # ============================================
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: iam-service
-            port:
-              number: 8001
-        annotations:
-          nginx.ingress.kubernetes.io/rewrite-target: /
-          nginx.ingress.kubernetes.io/configuration-snippet: |
-            set $service_prefix "";
