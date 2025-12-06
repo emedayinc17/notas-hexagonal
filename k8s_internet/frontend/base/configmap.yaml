@@ -7,7 +7,7 @@ metadata:
     app: sga-frontend
 data:
   # URL base del backend vista desde el navegador (opcional, solo informativa)
-  FRONTEND_API_URL: "http://sga.emeday.inc"
+  FRONTEND_API_URL: "http://172.189.58.78"
 
   # Este config.js se monta como archivo estático en el contenedor
   # y es el que usa tu JS (APP_CONFIG / API_CONFIG).
@@ -18,10 +18,10 @@ data:
     window.APP_CONFIG = {
       // URLs de los microservicios vía Ingress
       API_ENDPOINTS: {
-        IAM_SERVICE:       'http://sga.emeday.inc/iam',
-        ACADEMICO_SERVICE: 'http://sga.emeday.inc/academico',
-        PERSONAS_SERVICE:  'http://sga.emeday.inc/personas',
-        NOTAS_SERVICE:     'http://sga.emeday.inc/notas'
+        IAM_SERVICE:       'http://172.189.58.78/iam',
+        ACADEMICO_SERVICE: 'http://172.189.58.78/academico',
+        PERSONAS_SERVICE:  'http://172.189.58.78/personas',
+        NOTAS_SERVICE:     'http://172.189.58.78/notas'
       },
 
       // Configuración de autenticación
