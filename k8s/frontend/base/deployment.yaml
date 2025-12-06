@@ -17,14 +17,14 @@ spec:
     spec:
       containers:
         - name: sga-frontend
-          image: emeday17/frontend:1.0.0   # <-- tu imagen
+          image: emeday17/frontend:1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 80
-          # Montamos config.js dentro del Nginx (o servidor estático)
           volumeMounts:
+            # 👇 Montamos config.js exactamente donde lo pide el navegador: /js/config.js
             - name: frontend-config-volume
-              mountPath: /usr/share/nginx/html/config.js
+              mountPath: /usr/share/nginx/html/js/config.js
               subPath: config.js
           env:
             - name: FRONTEND_API_URL
