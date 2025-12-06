@@ -12,8 +12,8 @@ resources:
 configMapGenerator:
   - name: mysql-init-scripts
     files:
-      - sql/script.sql
-      - sql/script2.sql
+      - script.sql=sql/script.sql
+      - script2.sql=sql/script2.sql
 
 generatorOptions:
   disableNameSuffixHash: true
