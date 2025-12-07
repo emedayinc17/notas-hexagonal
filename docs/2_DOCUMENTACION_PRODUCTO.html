@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📦 Documentación de Producto - Sistema de Gestión de Notas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --success: #10b981;
+            --info: #3b82f6;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .doc-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .doc-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .doc-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .doc-content {
+            padding: 3rem 2rem;
+        }
+
+        .section-title {
+            color: var(--primary);
+            font-size: 2rem;
+            margin: 2rem 0 1.5rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feature-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .architecture-diagram {
+            background: #f8f9fa;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+
+        .service-box {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .endpoint-card {
+            background: #f8f9fa;
+            border-left: 4px solid var(--info);
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+        }
+
+        .code-snippet {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .tech-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            margin: 0.25rem;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .tech-backend {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .tech-frontend {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .tech-database {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .tech-devops {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .flow-diagram {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .flow-step {
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .flow-arrow {
+            text-align: center;
+            font-size: 2rem;
+            color: var(--primary);
+            margin: 0.5rem 0;
+        }
+
+        .data-model-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .data-model-table th,
+        .data-model-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid #e5e7eb;
+        }
+
+        .data-model-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+        }
+
+        .data-model-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        @media (max-width: 768px) {
+            .doc-content {
+                padding: 2rem 1rem;
+            }
+        }
+    
+        /* Menú de Navegación Sticky */
+        .nav-menu {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-menu .nav-link {
+            color: white !important;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+            border-radius: 5px;
+            margin: 0 0.25rem;
+        }
+
+        .nav-menu .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-menu .nav-link.active {
+            background: rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+        }
+
+        .nav-menu .navbar-brand {
+            color: white !important;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+
+<body>
+    <!-- Menú de Navegación -->
+    <nav class="navbar navbar-expand-lg nav-menu">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <i class="bi bi-house-door-fill"></i> Documentación SGA
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link " href="1_DOCUMENTACION_PROCESO.html">
+                            <i class="bi bi-diagram-3"></i> Proceso
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="2_DOCUMENTACION_PRODUCTO.html">
+                            <i class="bi bi-box-seam"></i> Producto
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="3_DOCUMENTACION_OPERACIONES.html">
+                            <i class="bi bi-gear-fill"></i> Operaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="4_DOCUMENTACION_USUARIO.html">
+                            <i class="bi bi-person-fill"></i> Usuario
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="5_DOCUMENTACION_NEGOCIO.html">
+                            <i class="bi bi-briefcase-fill"></i> Negocio
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1 style="position: relative; z-index: 1;">📦 Documentación de Producto</h1>
+            <p style="position: relative; z-index: 1; font-size: 1.2rem;">
+                Sistema de Gestión de Notas - Especificación Técnica Completa
+            </p>
+            <div style="position: relative; z-index: 1; margin-top: 1rem;">
+                <span class="badge bg-light text-dark">Versión 1.0.0</span>
+                <span class="badge bg-light text-dark">Diciembre 2025</span>
+            </div>
+        </div>
+
+        <div class="doc-content">
+            <!-- Resumen del Producto -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-info-circle"></i>
+                    Resumen del Producto
+                </h2>
+
+                <div class="alert alert-primary">
+                    <h5><i class="bi bi-mortarboard me-2"></i>¿Qué es el Sistema de Gestión de Notas?</h5>
+                    <p class="mb-0">
+                        Es una plataforma web completa para la gestión académica de instituciones educativas,
+                        que permite administrar la estructura académica, registrar calificaciones, gestionar
+                        alumnos y padres, y generar alertas automáticas de rendimiento académico. Construido
+                        con arquitectura de microservicios y principios de Clean Architecture.
+                    </p>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="card text-center border-primary">
+                            <div class="card-body">
+                                <i class="bi bi-people text-primary" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">3 Roles</h5>
+                                <p class="text-muted small mb-0">ADMIN, DOCENTE, PADRE</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center border-success">
+                            <div class="card-body">
+                                <i class="bi bi-server text-success" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">4 Servicios</h5>
+                                <p class="text-muted small mb-0">Microservicios independientes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center border-info">
+                            <div class="card-body">
+                                <i class="bi bi-database text-info" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">26 Tablas</h5>
+                                <p class="text-muted small mb-0">Base de datos normalizada</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center border-warning">
+                            <div class="card-body">
+                                <i class="bi bi-code-slash text-warning" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">37+ APIs</h5>
+                                <p class="text-muted small mb-0">Endpoints RESTful</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Arquitectura del Sistema -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-diagram-3"></i>
+                    Arquitectura del Sistema
+                </h2>
+
+                <h4 class="mt-4">Arquitectura de Microservicios</h4>
+                <div class="architecture-diagram">
+                    <pre>
+┌─────────────────────────────────────────────────────────────────────┐
+│                    FRONTEND WEB (Puerto 8080)                       │
+│                  HTML5 + CSS3 + JavaScript + Bootstrap 5            │
+└─────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  │ HTTP/REST + JWT
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         MICROSERVICIOS BACKEND                      │
+├──────────────┬──────────────┬──────────────┬──────────────────────┤
+│  IAM Service │  Académico   │  Personas    │  Notas Service       │
+│  (Pto 8001)  │  (Pto 8002)  │  (Pto 8003)  │  (Pto 8004)          │
+│              │              │              │                      │
+│ • Usuarios   │ • Grados     │ • Alumnos    │ • Calificaciones     │
+│ • Roles      │ • Cursos     │ • Padres     │ • Evaluaciones       │
+│ • Auth JWT   │ • Clases     │ • Relaciones │ • Alertas            │
+│ • Sesiones   │ • Periodos   │ • Matrículas │ • Outbox             │
+│              │ • Escalas    │              │                      │
+└──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────────────┘
+       │              │              │              │
+       │              │              │              │
+       ▼              ▼              ▼              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         MySQL 8.0 Database                          │
+├──────────────┬──────────────┬──────────────┬──────────────────────┤
+│  sga_iam     │ sga_academico│ sga_personas │  sga_notas           │
+│  3 tablas    │  9 tablas    │  4 tablas    │  4 tablas            │
+│  1 vista     │  2 vistas    │  2 vistas    │  2 vistas            │
+└──────────────┴──────────────┴──────────────┴──────────────────────┘
+</pre>
+                </div>
+
+                <h4 class="mt-4">Arquitectura Hexagonal por Servicio</h4>
+                <div class="architecture-diagram">
+                    <pre>
+{servicio}-service/app/
+│
+├── domain/                    ← CAPA DE DOMINIO (sin dependencias)
+│   ├── models.py              ← Entidades de negocio (dataclasses)
+│   ├── ports.py               ← Interfaces/Contratos (ABC)
+│   └── exceptions.py          ← Excepciones de dominio
+│
+├── application/               ← CAPA DE APLICACIÓN (casos de uso)
+│   └── use_cases/
+│       ├── create_*.py        ← Crear entidades
+│       ├── update_*.py        ← Actualizar entidades
+│       ├── list_*.py          ← Listar entidades
+│       └── delete_*.py        ← Eliminar entidades
+│
+└── infrastructure/            ← CAPA DE INFRAESTRUCTURA (detalles)
+    ├── db/
+    │   ├── models.py          ← SQLAlchemy models
+    │   └── repositories.py    ← Implementación de ports
+    ├── http/
+    │   ├── router_public.py   ← Endpoints públicos
+    │   ├── router_admin.py    ← Endpoints administrativos
+    │   └── dependencies.py    ← Inyección de dependencias
+    └── clients/               ← HTTP clients a otros servicios
+        └── {servicio}_client.py
+
+Regla de Dependencia:
+Infrastructure → Application → Domain
+(Las flechas indican "depende de")
+</pre>
+                </div>
+            </section>
+
+            <!-- Stack Tecnológico -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-stack"></i>
+                    Stack Tecnológico
+                </h2>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <h4><i class="bi bi-server text-primary me-2"></i>Backend</h4>
+                            <div class="mt-3">
+                                <span class="tech-badge tech-backend">Python 3.10+</span>
+                                <span class="tech-badge tech-backend">FastAPI 0.104+</span>
+                                <span class="tech-badge tech-backend">SQLAlchemy 2.0+</span>
+                                <span class="tech-badge tech-backend">PyMySQL 1.1+</span>
+                                <span class="tech-badge tech-backend">Pydantic 2.5+</span>
+                                <span class="tech-badge tech-backend">python-jose (JWT)</span>
+                                <span class="tech-badge tech-backend">Passlib + Bcrypt</span>
+                                <span class="tech-badge tech-backend">httpx 0.25+</span>
+                                <span class="tech-badge tech-backend">Uvicorn 0.24+</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <h4><i class="bi bi-window-desktop text-success me-2"></i>Frontend</h4>
+                            <div class="mt-3">
+                                <span class="tech-badge tech-frontend">HTML5</span>
+                                <span class="tech-badge tech-frontend">CSS3</span>
+                                <span class="tech-badge tech-frontend">JavaScript ES6+</span>
+                                <span class="tech-badge tech-frontend">Bootstrap 5.3</span>
+                                <span class="tech-badge tech-frontend">Bootstrap Icons</span>
+                                <span class="tech-badge tech-frontend">Fetch API</span>
+                                <span class="tech-badge tech-frontend">LocalStorage</span>
+                                <span class="tech-badge tech-frontend">CSS Animations</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <h4><i class="bi bi-database text-warning me-2"></i>Base de Datos</h4>
+                            <div class="mt-3">
+                                <span class="tech-badge tech-database">MySQL 8.0+</span>
+                                <span class="tech-badge tech-database">InnoDB Engine</span>
+                                <span class="tech-badge tech-database">UTF-8 MB4</span>
+                                <span class="tech-badge tech-database">JSON Support</span>
+                                <span class="tech-badge tech-database">Views</span>
+                                <span class="tech-badge tech-database">Constraints</span>
+                                <span class="tech-badge tech-database">Indexes</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <h4><i class="bi bi-cloud text-info me-2"></i>DevOps</h4>
+                            <div class="mt-3">
+                                <span class="tech-badge tech-devops">Docker</span>
+                                <span class="tech-badge tech-devops">Kubernetes</span>
+                                <span class="tech-badge tech-devops">Nginx Alpine</span>
+                                <span class="tech-badge tech-devops">ConfigMaps</span>
+                                <span class="tech-badge tech-devops">PowerShell</span>
+                                <span class="tech-badge tech-devops">Git</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Servicios Detallados -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-boxes"></i>
+                    Servicios del Sistema
+                </h2>
+
+                <!-- IAM Service -->
+                <div class="feature-card">
+                    <h3><i class="bi bi-shield-lock text-primary me-2"></i>1. IAM Service (Puerto 8001)</h3>
+                    <p><strong>Responsabilidad:</strong> Autenticación, autorización y gestión de usuarios</p>
+
+                    <h5 class="mt-3">Entidades:</h5>
+                    <ul>
+                        <li><strong>Usuario:</strong> Datos de usuario, credenciales, rol asignado</li>
+                        <li><strong>Rol:</strong> ADMIN, DOCENTE, PADRE</li>
+                        <li><strong>Sesión:</strong> Tracking de tokens JWT</li>
+                        <li><strong>AuditoríaLog:</strong> Registro de todas las acciones</li>
+                    </ul>
+
+                    <h5 class="mt-3">Endpoints Principales:</h5>
+                    <div class="endpoint-card">
+                        <strong>POST /v1/auth/register</strong> - Registrar nuevo usuario
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>POST /v1/auth/login</strong> - Login y obtención de JWT
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET /v1/users/me</strong> - Obtener usuario actual
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET /v1/admin/users</strong> - Listar usuarios (ADMIN)
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>PATCH /v1/admin/users/{id}</strong> - Actualizar usuario (ADMIN)
+                    </div>
+                </div>
+
+                <!-- Académico Service -->
+                <div class="feature-card">
+                    <h3><i class="bi bi-book text-success me-2"></i>2. Académico Service (Puerto 8002)</h3>
+                    <p><strong>Responsabilidad:</strong> Estructura académica, periodos, escalas y umbrales</p>
+
+                    <h5 class="mt-3">Entidades:</h5>
+                    <ul>
+                        <li><strong>Grado:</strong> Niveles educativos (Inicial, Primaria, Secundaria)</li>
+                        <li><strong>Sección:</strong> Divisiones por año escolar</li>
+                        <li><strong>Curso:</strong> Materias/asignaturas</li>
+                        <li><strong>Clase:</strong> Curso + Sección + Periodo + Docente</li>
+                        <li><strong>Periodo:</strong> Bimestres, trimestres, semestres</li>
+                        <li><strong>EscalaCalificación:</strong> Numéricas (0-20) o Literales (AD-A-B-C)</li>
+                        <li><strong>UmbralAlerta:</strong> Configuración de alertas por nota baja</li>
+                    </ul>
+
+                    <h5 class="mt-3">Endpoints Principales:</h5>
+                    <div class="endpoint-card">
+                        <strong>GET/POST /v1/grados</strong> - Gestión de grados
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET/POST /v1/cursos</strong> - Gestión de cursos
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET/POST /v1/secciones</strong> - Gestión de secciones
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET/POST /v1/clases</strong> - Gestión de clases
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET /v1/clases/docente</strong> - Clases del docente (DOCENTE)
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET/POST /v1/escalas</strong> - Escalas de calificación
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET/POST /v1/periodos</strong> - Gestión de periodos
+                    </div>
+                </div>
+
+                <!-- Personas Service -->
+                <div class="feature-card">
+                    <h3><i class="bi bi-people text-info me-2"></i>3. Personas Service (Puerto 8003)</h3>
+                    <p><strong>Responsabilidad:</strong> Gestión de alumnos, padres y relaciones</p>
+
+                    <h5 class="mt-3">Entidades:</h5>
+                    <ul>
+                        <li><strong>Alumno:</strong> Estudiantes con código único</li>
+                        <li><strong>Padre:</strong> Padres/tutores</li>
+                        <li><strong>RelacionPadreAlumno:</strong> Vínculo N:M entre padres y alumnos</li>
+                        <li><strong>MatriculaClase:</strong> Inscripción de alumno en clase</li>
+                    </ul>
+
+                    <h5 class="mt-3">Endpoints Principales:</h5>
+                    <div class="endpoint-card">
+                        <strong>GET/POST /v1/alumnos</strong> - Gestión de alumnos (ADMIN)
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET/POST /v1/padres</strong> - Gestión de padres (ADMIN)
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>POST /v1/relaciones</strong> - Vincular padre-alumno (ADMIN)
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>POST /v1/matriculas</strong> - Matricular alumno (ADMIN)
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET /v1/relaciones/alumno/{id}</strong> - Obtener padres de alumno
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET /v1/relaciones/padre/{id}</strong> - Obtener hijos de padre (PADRE)
+                    </div>
+                </div>
+
+                <!-- Notas Service -->
+                <div class="feature-card">
+                    <h3><i class="bi bi-clipboard-data text-warning me-2"></i>4. Notas Service (Puerto 8004)</h3>
+                    <p><strong>Responsabilidad:</strong> Registro de notas, evaluación y notificaciones</p>
+
+                    <h5 class="mt-3">Entidades:</h5>
+                    <ul>
+                        <li><strong>Nota:</strong> Calificaciones con soporte para escalas numéricas y literales</li>
+                        <li><strong>TipoEvaluacion:</strong> Examen, Práctica, Tarea, etc.</li>
+                        <li><strong>AlertaNotificacion:</strong> Alertas generadas automáticamente</li>
+                        <li><strong>OutboxNotificacion:</strong> Cola de notificaciones (Patrón Outbox)</li>
+                    </ul>
+
+                    <h5 class="mt-3">Endpoints Principales:</h5>
+                    <div class="endpoint-card">
+                        <strong>POST /v1/notas</strong> - Registrar nota (DOCENTE/ADMIN)
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET /v1/notas/alumno/{id}</strong> - Historial de notas
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET /v1/notas/clase/{id}</strong> - Notas de clase (DOCENTE/ADMIN)
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>GET /v1/alertas</strong> - Alertas del padre (PADRE)
+                    </div>
+                    <div class="endpoint-card">
+                        <strong>PATCH /v1/alertas/{id}/marcar-leida</strong> - Marcar alerta como leída
+                    </div>
+                </div>
+            </section>
+
+            <!-- Modelo de Datos -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-database"></i>
+                    Modelo de Datos
+                </h2>
+
+                <h4>Esquema sga_iam</h4>
+                <table class="data-model-table">
+                    <thead>
+                        <tr>
+                            <th>Tabla</th>
+                            <th>Descripción</th>
+                            <th>Campos Clave</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>roles</strong></td>
+                            <td>Roles del sistema</td>
+                            <td>id, nombre, descripcion</td>
+                        </tr>
+                        <tr>
+                            <td><strong>usuarios</strong></td>
+                            <td>Usuarios del sistema</td>
+                            <td>id, username, email, password_hash, rol_id, status</td>
+                        </tr>
+                        <tr>
+                            <td><strong>sesiones</strong></td>
+                            <td>Tracking de JWT tokens</td>
+                            <td>id, usuario_id, token_jti, expires_at, revoked</td>
+                        </tr>
+                        <tr>
+                            <td><strong>auditoria_logs</strong></td>
+                            <td>Registro de acciones</td>
+                            <td>id, user_id, accion, entidad, datos_anteriores, datos_nuevos</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 class="mt-4">Esquema sga_academico</h4>
+                <table class="data-model-table">
+                    <thead>
+                        <tr>
+                            <th>Tabla</th>
+                            <th>Descripción</th>
+                            <th>Campos Clave</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>grados</strong></td>
+                            <td>Niveles educativos</td>
+                            <td>id, nombre, nivel (INICIAL/PRIMARIA/SECUNDARIA), orden</td>
+                        </tr>
+                        <tr>
+                            <td><strong>secciones</strong></td>
+                            <td>Secciones por año</td>
+                            <td>id, grado_id, nombre, año_escolar, capacidad_maxima</td>
+                        </tr>
+                        <tr>
+                            <td><strong>cursos</strong></td>
+                            <td>Materias/asignaturas</td>
+                            <td>id, codigo, nombre, horas_semanales</td>
+                        </tr>
+                        <tr>
+                            <td><strong>periodo_tipos</strong></td>
+                            <td>Tipos de periodo</td>
+                            <td>id, nombre, num_periodos (BIMESTRE/TRIMESTRE/etc)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>periodos</strong></td>
+                            <td>Periodos académicos</td>
+                            <td>id, año_escolar, tipo_id, numero, fecha_inicio, fecha_fin</td>
+                        </tr>
+                        <tr>
+                            <td><strong>clases</strong></td>
+                            <td>Clases activas</td>
+                            <td>id, curso_id, seccion_id, periodo_id, docente_user_id</td>
+                        </tr>
+                        <tr>
+                            <td><strong>escalas_calificacion</strong></td>
+                            <td>Escalas de notas</td>
+                            <td>id, nombre, tipo (NUMERICA/LITERAL), valor_min, valor_max</td>
+                        </tr>
+                        <tr>
+                            <td><strong>valores_escala</strong></td>
+                            <td>Valores de escalas literales</td>
+                            <td>id, escala_id, valor, equivalente_numerico</td>
+                        </tr>
+                        <tr>
+                            <td><strong>umbrales_alerta</strong></td>
+                            <td>Configuración de alertas</td>
+                            <td>id, grado_id, curso_id, escala_id, valor_minimo</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 class="mt-4">Esquema sga_personas</h4>
+                <table class="data-model-table">
+                    <thead>
+                        <tr>
+                            <th>Tabla</th>
+                            <th>Descripción</th>
+                            <th>Campos Clave</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>alumnos</strong></td>
+                            <td>Estudiantes</td>
+                            <td>id, codigo_alumno, dni, nombres, apellidos, fecha_nacimiento</td>
+                        </tr>
+                        <tr>
+                            <td><strong>padres</strong></td>
+                            <td>Padres/tutores</td>
+                            <td>id, dni, nombres, apellidos, email, celular</td>
+                        </tr>
+                        <tr>
+                            <td><strong>relaciones_padre_alumno</strong></td>
+                            <td>Vínculos familiares</td>
+                            <td>id, padre_id, alumno_id, tipo_relacion, es_contacto_principal</td>
+                        </tr>
+                        <tr>
+                            <td><strong>matriculas_clase</strong></td>
+                            <td>Inscripciones</td>
+                            <td>id, alumno_id, clase_id, fecha_matricula, status</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 class="mt-4">Esquema sga_notas</h4>
+                <table class="data-model-table">
+                    <thead>
+                        <tr>
+                            <th>Tabla</th>
+                            <th>Descripción</th>
+                            <th>Campos Clave</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>tipos_evaluacion</strong></td>
+                            <td>Tipos de evaluación</td>
+                            <td>id, nombre, codigo, peso_default</td>
+                        </tr>
+                        <tr>
+                            <td><strong>notas</strong></td>
+                            <td>Calificaciones</td>
+                            <td>id, matricula_clase_id, tipo_evaluacion_id, periodo_id, valor_numerico/literal</td>
+                        </tr>
+                        <tr>
+                            <td><strong>alertas_notificacion</strong></td>
+                            <td>Alertas generadas</td>
+                            <td>id, nota_id, alumno_id, padre_id, tipo_alerta, mensaje, leida</td>
+                        </tr>
+                        <tr>
+                            <td><strong>outbox_notificaciones</strong></td>
+                            <td>Cola de notificaciones</td>
+                            <td>id, alerta_id, tipo (EMAIL/SMS), destinatario, estado, intentos</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Flujos de Negocio -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-arrow-repeat"></i>
+                    Flujos de Negocio Principales
+                </h2>
+
+                <h4>Flujo 1: Registro de Nota con Alerta Automática</h4>
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        1. DOCENTE registra nota → POST /v1/notas
+                    </div>
+                    <div class="flow-arrow">↓</div>
+                    <div class="flow-step">
+                        2. Sistema valida datos y crea registro en tabla 'notas'
+                    </div>
+                    <div class="flow-arrow">↓</div>
+                    <div class="flow-step">
+                        3. Sistema consulta umbral_alerta (por curso/grado/escala)
+                    </div>
+                    <div class="flow-arrow">↓</div>
+                    <div class="flow-step">
+                        4. ¿Nota < Umbral? → SI: Continuar | NO: Fin </div>
+                            <div class="flow-arrow">↓</div>
+                            <div class="flow-step">
+                                5. Crear registro en 'alertas_notificacion'
+                            </div>
+                            <div class="flow-arrow">↓</div>
+                            <div class="flow-step">
+                                6. HTTP call a Personas Service → Obtener padres del alumno
+                            </div>
+                            <div class="flow-arrow">↓</div>
+                            <div class="flow-step">
+                                7. Para cada padre: Crear registro en 'outbox_notificaciones' (PENDIENTE)
+                            </div>
+                            <div class="flow-arrow">↓</div>
+                            <div class="flow-step">
+                                8. Worker procesa outbox → Envía email/SMS
+                            </div>
+                            <div class="flow-arrow">↓</div>
+                            <div class="flow-step">
+                                9. Actualiza estado a ENVIADO
+                            </div>
+                            <div class="flow-arrow">↓</div>
+                            <div class="flow-step">
+                                10. PADRE consulta alertas → GET /v1/alertas
+                            </div>
+                    </div>
+
+                    <h4 class="mt-4">Flujo 2: Autenticación JWT</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-step">
+                            1. Usuario envía credenciales → POST /v1/auth/login
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            2. IAM Service valida email y password (bcrypt)
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            3. Genera JWT con payload: user_id, username, email, rol_nombre
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            4. Crea registro en tabla 'sesiones' (tracking)
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            5. Retorna: { access_token, token_type, user }
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            6. Cliente guarda token en LocalStorage
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            7. Cliente incluye en headers: Authorization: Bearer &lt;token&gt;
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            8. Cada servicio valida JWT con SECRET_KEY compartida
+                        </div>
+                    </div>
+
+                    <h4 class="mt-4">Flujo 3: Matrícula de Alumno</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-step">
+                            1. ADMIN crea alumno → POST /v1/alumnos
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            2. ADMIN crea padre → POST /v1/padres
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            3. ADMIN vincula padre-alumno → POST /v1/relaciones
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            4. ADMIN crea clase (curso + sección + periodo + docente)
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            5. ADMIN matricula alumno en clase → POST /v1/matriculas
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            6. Sistema valida: alumno existe, clase existe, no duplicados
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">
+                            7. Crea registro en 'matriculas_clase' con status ACTIVO
+                        </div>
+                    </div>
+            </section>
+
+            <!-- Seguridad -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-shield-check"></i>
+                    Seguridad
+                </h2>
+
+                <div class="feature-card">
+                    <h4><i class="bi bi-key text-warning me-2"></i>Autenticación y Autorización</h4>
+                    <ul>
+                        <li><strong>JWT (JSON Web Tokens):</strong> Autenticación stateless</li>
+                        <li><strong>Bcrypt:</strong> Hashing de contraseñas con salt</li>
+                        <li><strong>Roles:</strong> ADMIN, DOCENTE, PADRE con permisos diferenciados</li>
+                        <li><strong>Validación de tokens:</strong> En cada request a servicios protegidos</li>
+                        <li><strong>Expiración:</strong> Tokens con tiempo de vida configurable (24h default)</li>
+                        <li><strong>Tracking de sesiones:</strong> Registro de todos los tokens emitidos</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h4><i class="bi bi-shield-lock text-danger me-2"></i>Protección de Datos</h4>
+                    <ul>
+                        <li><strong>SQL Injection:</strong> Uso de SQLAlchemy ORM con parámetros bindeados</li>
+                        <li><strong>Validación de entrada:</strong> Pydantic models en todos los endpoints</li>
+                        <li><strong>CORS:</strong> Configurado para permitir solo orígenes autorizados</li>
+                        <li><strong>Soft Deletes:</strong> No se eliminan datos físicamente (is_deleted flag)</li>
+                        <li><strong>Auditoría:</strong> Registro completo de todas las acciones en auditoria_logs</li>
+                        <li><strong>Constraints de BD:</strong> Foreign keys, unique constraints, checks</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h4><i class="bi bi-eye text-info me-2"></i>Auditoría y Trazabilidad</h4>
+                    <p>Cada servicio tiene su tabla <code>auditoria_logs</code> que registra:</p>
+                    <ul>
+                        <li>Usuario que realizó la acción (user_id, username, rol)</li>
+                        <li>Tipo de acción (CREATE, UPDATE, DELETE, LOGIN, etc.)</li>
+                        <li>Entidad afectada (Usuario, Grado, Alumno, Nota, etc.)</li>
+                        <li>Datos anteriores y nuevos (JSON)</li>
+                        <li>Metadata de la petición (IP, user agent, endpoint, método HTTP)</li>
+                        <li>Resultado (exitoso, código de respuesta, mensaje de error)</li>
+                        <li>Timestamp de la acción</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Escalabilidad -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    Escalabilidad y Performance
+                </h2>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <h4><i class="bi bi-speedometer text-success me-2"></i>Backend</h4>
+                            <ul>
+                                <li><strong>Async/Await:</strong> FastAPI con soporte asíncrono</li>
+                                <li><strong>Connection Pooling:</strong> SQLAlchemy con pool de conexiones</li>
+                                <li><strong>Índices de BD:</strong> Optimización de queries frecuentes</li>
+                                <li><strong>Vistas materializadas:</strong> Para consultas complejas</li>
+                                <li><strong>Paginación:</strong> Limit/offset en listados</li>
+                                <li><strong>Microservicios:</strong> Escalado independiente por servicio</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <h4><i class="bi bi-lightning text-warning me-2"></i>Frontend</h4>
+                            <ul>
+                                <li><strong>Lazy Loading:</strong> Carga de datos bajo demanda</li>
+                                <li><strong>LocalStorage:</strong> Cache de token y datos de usuario</li>
+                                <li><strong>Paginación:</strong> Carga incremental de listados</li>
+                                <li><strong>Minificación:</strong> CSS/JS optimizados en producción</li>
+                                <li><strong>CDN:</strong> Bootstrap y librerías desde CDN</li>
+                                <li><strong>Responsive:</strong> Mobile-first design</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card mt-3">
+                    <h4><i class="bi bi-cloud text-primary me-2"></i>Deployment</h4>
+                    <ul>
+                        <li><strong>Docker:</strong> Containerización del frontend (Nginx Alpine)</li>
+                        <li><strong>Kubernetes:</strong> Orquestación con alta disponibilidad</li>
+                        <li><strong>ConfigMaps:</strong> Configuración externalizada por ambiente</li>
+                        <li><strong>Horizontal Scaling:</strong> Réplicas de pods según demanda</li>
+                        <li><strong>Zero Downtime:</strong> Rolling updates sin interrupciones</li>
+                        <li><strong>Health Checks:</strong> Liveness y readiness probes</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Conclusión -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-check-circle"></i>
+                    Resumen de Características
+                </h2>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card text-center border-success">
+                            <div class="card-body">
+                                <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">Arquitectura</h5>
+                                <ul class="list-unstyled text-start small">
+                                    <li>✅ Hexagonal (Clean)</li>
+                                    <li>✅ Microservicios</li>
+                                    <li>✅ DDD (Bounded Contexts)</li>
+                                    <li>✅ Repository Pattern</li>
+                                    <li>✅ Dependency Injection</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center border-info">
+                            <div class="card-body">
+                                <i class="bi bi-shield-check text-info" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">Seguridad</h5>
+                                <ul class="list-unstyled text-start small">
+                                    <li>✅ JWT Authentication</li>
+                                    <li>✅ Bcrypt Passwords</li>
+                                    <li>✅ SQL Injection Protection</li>
+                                    <li>✅ CORS Configured</li>
+                                    <li>✅ Audit Logs</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center border-warning">
+                            <div class="card-body">
+                                <i class="bi bi-graph-up text-warning" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">Escalabilidad</h5>
+                                <ul class="list-unstyled text-start small">
+                                    <li>✅ Async/Await</li>
+                                    <li>✅ Connection Pooling</li>
+                                    <li>✅ Database Indexes</li>
+                                    <li>✅ Kubernetes Ready</li>
+                                    <li>✅ Horizontal Scaling</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <div class="text-center mt-5 pt-4 border-top">
+                <p class="text-muted">
+                    <strong>Documentación de Producto</strong> - Sistema de Gestión de Notas
+                </p>
+                <p class="text-muted small">
+                    Versión 1.0.0 | Actualizado: Diciembre 2025
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

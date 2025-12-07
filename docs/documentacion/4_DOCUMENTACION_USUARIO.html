@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👥 Documentación de Usuario - Sistema de Gestión de Notas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --success: #10b981;
+            --info: #3b82f6;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .doc-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .doc-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .doc-content {
+            padding: 3rem 2rem;
+        }
+
+        .section-title {
+            color: var(--primary);
+            font-size: 2rem;
+            margin: 2rem 0 1.5rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .role-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            transition: all 0.3s ease;
+        }
+
+        .role-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .screenshot-placeholder {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 3rem;
+            text-align: center;
+            color: #6c757d;
+            margin: 1rem 0;
+        }
+
+        .step-guide {
+            background: #f8f9fa;
+            border-left: 4px solid var(--info);
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .tip-box {
+            background: #d1fae5;
+            border-left: 4px solid var(--success);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+    
+        /* Menú de Navegación Sticky */
+        .nav-menu {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-menu .nav-link {
+            color: white !important;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+            border-radius: 5px;
+            margin: 0 0.25rem;
+        }
+
+        .nav-menu .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-menu .nav-link.active {
+            background: rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+        }
+
+        .nav-menu .navbar-brand {
+            color: white !important;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+
+<body>
+    <!-- Menú de Navegación -->
+    <nav class="navbar navbar-expand-lg nav-menu">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <i class="bi bi-house-door-fill"></i> Documentación SGA
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link " href="1_DOCUMENTACION_PROCESO.html">
+                            <i class="bi bi-diagram-3"></i> Proceso
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="2_DOCUMENTACION_PRODUCTO.html">
+                            <i class="bi bi-box-seam"></i> Producto
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="3_DOCUMENTACION_OPERACIONES.html">
+                            <i class="bi bi-gear-fill"></i> Operaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="4_DOCUMENTACION_USUARIO.html">
+                            <i class="bi bi-person-fill"></i> Usuario
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="5_DOCUMENTACION_NEGOCIO.html">
+                            <i class="bi bi-briefcase-fill"></i> Negocio
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>👥 Manual de Usuario</h1>
+            <p style="font-size: 1.2rem;">Guía Completa para Usar el Sistema de Gestión de Notas</p>
+        </div>
+
+        <div class="doc-content">
+            <!-- Introducción -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-book"></i> Introducción
+                </h2>
+
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-info-circle me-2"></i>Bienvenido al Sistema de Gestión de Notas</h5>
+                    <p class="mb-0">
+                        Este sistema te permite gestionar de manera eficiente la información académica de tu institución
+                        educativa.
+                        Dependiendo de tu rol (Administrador, Docente o Padre), tendrás acceso a diferentes
+                        funcionalidades.
+                    </p>
+                </div>
+
+                <h4 class="mt-4">Acceso al Sistema</h4>
+                <div class="step-guide">
+                    <p><strong>URL:</strong> <code>http://localhost:8080</code> (desarrollo) o la URL proporcionada por
+                        tu institución</p>
+                    <p class="mb-0"><strong>Navegadores compatibles:</strong> Chrome, Firefox, Edge, Safari (última
+                        versión)</p>
+                </div>
+            </section>
+
+            <!-- Capturas de Pantalla del Sistema -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-images"></i> Capturas de Pantalla del Sistema
+                </h2>
+
+                <div class="alert alert-success">
+                    <h5><i class="bi bi-camera me-2"></i>Interfaz Real del Sistema</h5>
+                    <p class="mb-0">
+                        A continuación se muestran capturas de pantalla reales del sistema para que puedas
+                        familiarizarte con la interfaz.
+                    </p>
+                </div>
+
+                <h4 class="mt-4">1. Pantalla de Inicio de Sesión</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/1_login.png" alt="Pantalla de Login" class="img-fluid rounded shadow"
+                            style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 1:</strong> Pantalla de inicio de sesión. Ingresa tu email y contraseña para
+                            acceder al sistema.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">2. Dashboard Principal (Vista Administrador)</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/2_dashboard.png" alt="Dashboard Administrador"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 2:</strong> Dashboard principal con estadísticas del sistema. Muestra total
+                            de usuarios, alumnos, clases y notas registradas.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">3. Gestión de Usuarios</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/3_usuarios.png" alt="Gestión de Usuarios" class="img-fluid rounded shadow"
+                            style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 3:</strong> Módulo de gestión de usuarios. Permite crear, editar y
+                            administrar usuarios del sistema con diferentes roles.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">4. Gestión de Alumnos</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/4_alumnos.png" alt="Gestión de Alumnos" class="img-fluid rounded shadow"
+                            style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 4:</strong> Módulo de gestión de alumnos. Lista completa de estudiantes con
+                            opciones de búsqueda, filtrado y gestión familiar.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">5. Gestión de Clases</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/5_clases.png" alt="Gestión de Clases" class="img-fluid rounded shadow"
+                            style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 5:</strong> Módulo de gestión de clases. Permite crear y administrar clases
+                            asignando cursos, secciones y docentes.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">6. Formulario de Registro de Alumno</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/6_modal_alumno.png" alt="Modal Nuevo Alumno"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 6:</strong> Modal de registro de nuevo alumno. Formulario completo con todos
+                            los datos personales y académicos requeridos.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-5" style="color: var(--info);">
+                    <i class="bi bi-person-video3"></i> Flujo del Docente
+                </h4>
+                <div class="alert alert-info">
+                    <p class="mb-0">
+                        <strong>Capturas del rol DOCENTE:</strong> Muestra las funcionalidades disponibles para los
+                        profesores del sistema.
+                    </p>
+                </div>
+
+                <h4 class="mt-4">7. Dashboard Docente</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/7_docente_dashboard.png" alt="Dashboard Docente"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 7:</strong> Dashboard del docente. Muestra un resumen de sus clases asignadas
+                            y acceso rápido a funcionalidades principales.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">8. Mis Clases (Vista Docente)</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/8_docente_clases.png" alt="Mis Clases Docente"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 8:</strong> Módulo "Mis Clases" del docente. Lista de todas las clases
+                            asignadas con opciones para gestionar notas y ver alumnos.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">9. Gestión de Notas (Vista Docente)</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/9_docente_notas.png" alt="Gestión de Notas Docente"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 9:</strong> Interfaz de gestión de notas del docente. Permite registrar y
+                            editar calificaciones de los alumnos de sus clases.
+                        </p>
+                    </div>
+                </div>
+
+                <h5 class="mt-4" style="color: var(--info);">
+                    <i class="bi bi-hand-index"></i> Flujos Interactivos del Docente
+                </h5>
+                <p class="text-muted">Las siguientes capturas muestran el flujo completo de gestión de notas:</p>
+
+                <h4 class="mt-4">10. Ver Notas de una Clase (Docente)</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/13_docente_ver_notas.png" alt="Ver Notas Clase Docente"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 10:</strong> Vista de notas de una clase específica. El docente puede ver
+                            todas las calificaciones registradas para sus alumnos y acceder a opciones de gestión.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">11. Modal de Gestión de Notas (Docente)</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/14_docente_modal_notas.png" alt="Modal Gestión Notas Docente"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 11:</strong> Modal de gestión de notas de un alumno. Muestra el formulario
+                            para registrar o editar calificaciones con todos los campos disponibles.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">12. Formulario con Nota Ingresada (Docente)</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/15_docente_nota_ingresada.png" alt="Formulario Nota Ingresada Docente"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 12:</strong> Formulario de registro de nota con datos ingresados. Ejemplo de
+                            cómo el docente ingresa una calificación (15 en este caso) antes de guardar.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-5" style="color: var(--warning);">
+                    <i class="bi bi-people-fill"></i> Flujo del Padre/Tutor
+                </h4>
+                <div class="alert alert-warning">
+                    <p class="mb-0">
+                        <strong>Capturas del rol PADRE:</strong> Muestra las funcionalidades disponibles para los padres
+                        de familia.
+                    </p>
+                </div>
+
+                <h4 class="mt-4">10. Dashboard Padre</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/10_padre_dashboard.png" alt="Dashboard Padre"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 10:</strong> Dashboard del padre/tutor. Muestra información resumida de sus
+                            hijos y acceso a consultas de notas.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">11. Mis Hijos (Vista Padre)</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/11_padre_mis_hijos.png" alt="Mis Hijos Vista Padre"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 11:</strong> Vista de "Mis Hijos" en el dashboard del padre. Muestra la
+                            información de los hijos vinculados a la cuenta.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">12. Notas de mis Hijos (Vista Padre)</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/12_padre_notas.png" alt="Notas de Hijos Vista Padre"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 12:</strong> Módulo de consulta de notas del padre. Permite ver las
+                            calificaciones de sus hijos por curso y periodo, con alertas de notas bajas.
+                        </p>
+                    </div>
+                </div>
+
+                <h5 class="mt-4" style="color: var(--warning);">
+                    <i class="bi bi-hand-index"></i> Flujos Interactivos del Padre
+                </h5>
+                <p class="text-muted">Las siguientes capturas muestran el flujo completo de consulta de notas:</p>
+
+                <h4 class="mt-4">16. Selección de Hijo (Combobox Abierto)</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/16_padre_select_hijo.png" alt="Combobox Selección Hijo Padre"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 16:</strong> Combobox de selección de hijo desplegado. Muestra la lista de
+                            hijos vinculados a la cuenta del padre para filtrar las notas.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">17. Notas Filtradas por Hijo Seleccionado</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/17_padre_notas_filtradas.png" alt="Notas Filtradas Hijo Padre"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 17:</strong> Vista de notas filtradas después de seleccionar un hijo
+                            específico ("Demo Hijo Pepito"). Muestra las calificaciones del hijo seleccionado.
+                        </p>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">18. Vista Completa de Notas (Padre)</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <img src="screenshots/18_padre_notas_completas.png" alt="Vista Completa Notas Padre"
+                            class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-3 text-muted small">
+                            <strong>Figura 18:</strong> Vista completa con scroll mostrando todas las notas del hijo
+                            seleccionado. Incluye información de cursos, periodos, calificaciones y observaciones.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box mt-4">
+                    <strong><i class="bi bi-lightbulb me-2"></i>Nota:</strong>
+                    Todas las capturas de pantalla corresponden al sistema real en funcionamiento. La interfaz puede
+                    variar ligeramente según las actualizaciones del sistema.
+                </div>
+            </section>
+
+            <!-- Inicio de Sesión -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-box-arrow-in-right"></i> Inicio de Sesión
+                </h2>
+
+                <div class="step-guide">
+                    <h5>Paso 1: Acceder a la Página de Login</h5>
+                    <ol>
+                        <li>Abre tu navegador web</li>
+                        <li>Ingresa la URL del sistema</li>
+                        <li>Verás la pantalla de inicio de sesión</li>
+                    </ol>
+                </div>
+
+                <div class="step-guide">
+                    <h5>Paso 2: Ingresar Credenciales</h5>
+                    <ol>
+                        <li>Ingresa tu <strong>correo electrónico</strong></li>
+                        <li>Ingresa tu <strong>contraseña</strong></li>
+                        <li>Haz clic en el botón <strong>"Iniciar Sesión"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="tip-box">
+                    <strong><i class="bi bi-lightbulb me-2"></i>Consejo:</strong>
+                    Usa los botones de "Acceso Rápido" para iniciar sesión con un solo clic (solo en ambiente de
+                    desarrollo).
+                </div>
+
+                <div class="warning-box">
+                    <strong><i class="bi bi-exclamation-triangle me-2"></i>¿Olvidaste tu contraseña?</strong>
+                    Contacta al administrador del sistema para restablecer tu contraseña.
+                </div>
+            </section>
+
+            <!-- Roles y Permisos -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-people"></i> Roles y Permisos
+                </h2>
+
+                <div class="role-card">
+                    <h3><i class="bi bi-shield-fill text-danger me-2"></i>Administrador (ADMIN)</h3>
+                    <p class="text-muted">Acceso completo al sistema</p>
+
+                    <h5 class="mt-3">Funcionalidades:</h5>
+                    <ul class="feature-list">
+                        <li>Gestionar estructura académica (grados, secciones, cursos, periodos)</li>
+                        <li>Crear y asignar clases a docentes</li>
+                        <li>Gestionar alumnos y padres</li>
+                        <li>Vincular relaciones padre-hijo</li>
+                        <li>Matricular alumnos en clases</li>
+                        <li>Configurar escalas de calificación</li>
+                        <li>Definir umbrales de alerta</li>
+                        <li>Ver todas las notas del sistema</li>
+                        <li>Gestionar usuarios del sistema</li>
+                        <li>Exportar datos a Excel (SIAGIE)</li>
+                    </ul>
+                </div>
+
+                <div class="role-card">
+                    <h3><i class="bi bi-person-video3 text-info me-2"></i>Docente (DOCENTE)</h3>
+                    <p class="text-muted">Gestión de clases y calificaciones</p>
+
+                    <h5 class="mt-3">Funcionalidades:</h5>
+                    <ul class="feature-list">
+                        <li>Ver las clases asignadas</li>
+                        <li>Ver lista de alumnos por clase</li>
+                        <li>Registrar notas de sus alumnos</li>
+                        <li>Editar notas existentes</li>
+                        <li>Ver historial de notas por alumno</li>
+                        <li>Ver promedios por curso y periodo</li>
+                        <li>Filtrar notas por periodo, curso y sección</li>
+                        <li>Exportar notas a Excel</li>
+                    </ul>
+                </div>
+
+                <div class="role-card">
+                    <h3><i class="bi bi-people-fill text-warning me-2"></i>Padre/Tutor (PADRE)</h3>
+                    <p class="text-muted">Consulta de información de hijos</p>
+
+                    <h5 class="mt-3">Funcionalidades:</h5>
+                    <ul class="feature-list">
+                        <li>Ver información de sus hijos</li>
+                        <li>Consultar notas por curso y periodo</li>
+                        <li>Ver promedios académicos</li>
+                        <li>Recibir alertas de notas bajas</li>
+                        <li>Marcar alertas como leídas</li>
+                        <li>Ver historial completo de calificaciones</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Guía por Rol: ADMIN -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-shield-fill"></i> Guía para Administradores
+                </h2>
+
+                <h4>1. Configuración Inicial del Sistema</h4>
+                <div class="step-guide">
+                    <h5>Crear Grados</h5>
+                    <ol>
+                        <li>En el menú lateral, haz clic en <strong>"Grados"</strong></li>
+                        <li>Haz clic en el botón <strong>"+ Nuevo Grado"</strong></li>
+                        <li>Completa el formulario:
+                            <ul>
+                                <li><strong>Nombre:</strong> Ej. "1ro Primaria"</li>
+                                <li><strong>Nivel:</strong> Selecciona INICIAL, PRIMARIA o SECUNDARIA</li>
+                                <li><strong>Orden:</strong> Número de orden dentro del nivel</li>
+                                <li><strong>Descripción:</strong> (Opcional)</li>
+                            </ul>
+                        </li>
+                        <li>Haz clic en <strong>"Guardar"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="step-guide">
+                    <h5>Crear Secciones</h5>
+                    <ol>
+                        <li>En el menú lateral, haz clic en <strong>"Secciones"</strong></li>
+                        <li>Haz clic en <strong>"+ Nueva Sección"</strong></li>
+                        <li>Completa el formulario:
+                            <ul>
+                                <li><strong>Grado:</strong> Selecciona el grado</li>
+                                <li><strong>Nombre:</strong> Ej. "A", "B", "C"</li>
+                                <li><strong>Año Escolar:</strong> Ej. 2025</li>
+                                <li><strong>Capacidad Máxima:</strong> Número de alumnos</li>
+                            </ul>
+                        </li>
+                        <li>Haz clic en <strong>"Guardar"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="step-guide">
+                    <h5>Crear Cursos</h5>
+                    <ol>
+                        <li>En el menú lateral, haz clic en <strong>"Cursos"</strong></li>
+                        <li>Haz clic en <strong>"+ Nuevo Curso"</strong></li>
+                        <li>Completa el formulario:
+                            <ul>
+                                <li><strong>Código:</strong> Ej. "MAT" (único)</li>
+                                <li><strong>Nombre:</strong> Ej. "Matemática"</li>
+                                <li><strong>Horas Semanales:</strong> Ej. 5</li>
+                            </ul>
+                        </li>
+                        <li>Haz clic en <strong>"Guardar"</strong></li>
+                    </ol>
+                </div>
+
+                <h4 class="mt-4">2. Gestión de Personas</h4>
+                <div class="step-guide">
+                    <h5>Registrar Alumno</h5>
+                    <ol>
+                        <li>En el menú lateral, haz clic en <strong>"Alumnos"</strong></li>
+                        <li>Haz clic en <strong>"+ Nuevo Alumno"</strong></li>
+                        <li>Completa todos los campos requeridos</li>
+                        <li>Haz clic en <strong>"Guardar"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="step-guide">
+                    <h5>Registrar Padre/Tutor</h5>
+                    <ol>
+                        <li>En el menú lateral, haz clic en <strong>"Padres"</strong></li>
+                        <li>Haz clic en <strong>"+ Nuevo Padre"</strong></li>
+                        <li>Completa todos los campos requeridos</li>
+                        <li>Haz clic en <strong>"Guardar"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="step-guide">
+                    <h5>Vincular Padre con Alumno</h5>
+                    <ol>
+                        <li>En la lista de alumnos, haz clic en el botón <strong>"Gestionar Familiares"</strong></li>
+                        <li>Selecciona el padre de la lista</li>
+                        <li>Selecciona el tipo de relación (PADRE, MADRE, TUTOR, APODERADO)</li>
+                        <li>Marca si es contacto principal (opcional)</li>
+                        <li>Haz clic en <strong>"Agregar Relación"</strong></li>
+                    </ol>
+                </div>
+
+                <h4 class="mt-4">3. Crear Clases y Matrículas</h4>
+                <div class="step-guide">
+                    <h5>Crear Clase</h5>
+                    <ol>
+                        <li>En el menú lateral, haz clic en <strong>"Clases"</strong></li>
+                        <li>Haz clic en <strong>"+ Nueva Clase"</strong></li>
+                        <li>Selecciona:
+                            <ul>
+                                <li><strong>Curso:</strong> La materia</li>
+                                <li><strong>Sección:</strong> El grupo de alumnos</li>
+                                <li><strong>Periodo:</strong> Bimestre, trimestre, etc.</li>
+                                <li><strong>Docente:</strong> El profesor asignado</li>
+                            </ul>
+                        </li>
+                        <li>Haz clic en <strong>"Guardar"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="step-guide">
+                    <h5>Matricular Alumno</h5>
+                    <ol>
+                        <li>En el menú lateral, haz clic en <strong>"Matrículas"</strong></li>
+                        <li>Haz clic en <strong>"+ Nueva Matrícula"</strong></li>
+                        <li>Selecciona el alumno y la clase</li>
+                        <li>Haz clic en <strong>"Matricular"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="tip-box">
+                    <strong><i class="bi bi-lightbulb me-2"></i>Consejo:</strong>
+                    Puedes matricular múltiples alumnos a la vez usando la opción de "Matrícula Masiva".
+                </div>
+            </section>
+
+            <!-- Guía por Rol: DOCENTE -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-person-video3"></i> Guía para Docentes
+                </h2>
+
+                <h4>1. Ver Mis Clases</h4>
+                <div class="step-guide">
+                    <ol>
+                        <li>Inicia sesión con tu cuenta de docente</li>
+                        <li>En el dashboard verás un resumen de tus clases</li>
+                        <li>Haz clic en <strong>"Mis Clases"</strong> en el menú lateral</li>
+                        <li>Verás la lista de todas las clases asignadas a ti</li>
+                    </ol>
+                </div>
+
+                <h4 class="mt-4">2. Registrar Notas</h4>
+                <div class="step-guide">
+                    <h5>Opción A: Desde el Módulo de Notas</h5>
+                    <ol>
+                        <li>En el menú lateral, haz clic en <strong>"Notas"</strong></li>
+                        <li>Haz clic en <strong>"+ Registrar Nota"</strong></li>
+                        <li>Completa el formulario:
+                            <ul>
+                                <li><strong>Alumno:</strong> Selecciona de la lista</li>
+                                <li><strong>Clase:</strong> Selecciona la clase</li>
+                                <li><strong>Tipo de Evaluación:</strong> Examen, Práctica, Tarea, etc.</li>
+                                <li><strong>Periodo:</strong> Bimestre, trimestre, etc.</li>
+                                <li><strong>Nota:</strong> Ingresa la calificación</li>
+                                <li><strong>Observaciones:</strong> (Opcional)</li>
+                            </ul>
+                        </li>
+                        <li>Haz clic en <strong>"Guardar"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="step-guide">
+                    <h5>Opción B: Desde la Lista de Alumnos</h5>
+                    <ol>
+                        <li>En "Mis Clases", selecciona una clase</li>
+                        <li>Verás la lista de alumnos matriculados</li>
+                        <li>Haz clic en el botón <strong>"Registrar Nota"</strong> junto al alumno</li>
+                        <li>Completa el formulario y guarda</li>
+                    </ol>
+                </div>
+
+                <div class="tip-box">
+                    <strong><i class="bi bi-lightbulb me-2"></i>Sistema de Alertas Automáticas:</strong>
+                    Si registras una nota por debajo del umbral configurado, el sistema generará automáticamente
+                    una alerta que se enviará a los padres del alumno.
+                </div>
+
+                <h4 class="mt-4">3. Editar Notas</h4>
+                <div class="step-guide">
+                    <ol>
+                        <li>En el módulo de "Notas", busca la nota que deseas editar</li>
+                        <li>Haz clic en el botón <strong>"Editar"</strong> (ícono de lápiz)</li>
+                        <li>Modifica los campos necesarios</li>
+                        <li>Haz clic en <strong>"Actualizar"</strong></li>
+                    </ol>
+                </div>
+
+                <h4 class="mt-4">4. Exportar Notas</h4>
+                <div class="step-guide">
+                    <ol>
+                        <li>En el módulo de "Notas", aplica los filtros deseados (periodo, curso, sección)</li>
+                        <li>Haz clic en el botón <strong>"Exportar SIAGIE"</strong></li>
+                        <li>El sistema generará un archivo Excel con el formato SIAGIE</li>
+                        <li>El archivo se descargará automáticamente</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- Guía por Rol: PADRE -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-people-fill"></i> Guía para Padres/Tutores
+                </h2>
+
+                <h4>1. Ver Información de Mis Hijos</h4>
+                <div class="step-guide">
+                    <ol>
+                        <li>Inicia sesión con tu cuenta de padre</li>
+                        <li>En el dashboard verás un resumen de tus hijos</li>
+                        <li>Haz clic en <strong>"Mis Hijos"</strong> para ver más detalles</li>
+                    </ol>
+                </div>
+
+                <h4 class="mt-4">2. Consultar Notas</h4>
+                <div class="step-guide">
+                    <ol>
+                        <li>En el menú lateral, haz clic en <strong>"Notas"</strong></li>
+                        <li>Selecciona el hijo del que deseas ver las notas</li>
+                        <li>Aplica filtros si deseas:
+                            <ul>
+                                <li><strong>Periodo:</strong> Ver notas de un bimestre específico</li>
+                                <li><strong>Curso:</strong> Ver notas de una materia específica</li>
+                            </ul>
+                        </li>
+                        <li>Verás el historial completo de calificaciones</li>
+                    </ol>
+                </div>
+
+                <h4 class="mt-4">3. Ver Alertas</h4>
+                <div class="step-guide">
+                    <ol>
+                        <li>En el menú lateral, haz clic en <strong>"Alertas"</strong></li>
+                        <li>Verás la lista de alertas de notas bajas</li>
+                        <li>Cada alerta muestra:
+                            <ul>
+                                <li>Nombre del alumno (tu hijo)</li>
+                                <li>Curso y periodo</li>
+                                <li>Nota obtenida</li>
+                                <li>Mensaje de la alerta</li>
+                                <li>Fecha de generación</li>
+                            </ul>
+                        </li>
+                        <li>Haz clic en <strong>"Marcar como Leída"</strong> para confirmar que viste la alerta</li>
+                    </ol>
+                </div>
+
+                <div class="warning-box">
+                    <strong><i class="bi bi-exclamation-triangle me-2"></i>Importante:</strong>
+                    Las alertas se generan automáticamente cuando tu hijo obtiene una nota por debajo del umbral
+                    establecido por la institución. Es importante revisarlas regularmente.
+                </div>
+
+                <h4 class="mt-4">4. Ver Promedios</h4>
+                <div class="step-guide">
+                    <ol>
+                        <li>En el módulo de "Notas", verás los promedios calculados automáticamente</li>
+                        <li>Los promedios se muestran por:
+                            <ul>
+                                <li>Curso (promedio de todas las evaluaciones)</li>
+                                <li>Periodo (promedio del bimestre/trimestre)</li>
+                                <li>General (promedio de todos los cursos)</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- Funcionalidades Comunes -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-gear"></i> Funcionalidades Comunes
+                </h2>
+
+                <h4>Filtros y Búsqueda</h4>
+                <div class="step-guide">
+                    <p>En la mayoría de los módulos encontrarás opciones de filtrado:</p>
+                    <ul>
+                        <li><strong>Barra de búsqueda:</strong> Busca por nombre, código, etc.</li>
+                        <li><strong>Filtros por periodo:</strong> Selecciona bimestre, trimestre, etc.</li>
+                        <li><strong>Filtros por grado/sección:</strong> Filtra por nivel educativo</li>
+                        <li><strong>Filtros por estado:</strong> Activo, Inactivo, etc.</li>
+                    </ul>
+                </div>
+
+                <h4 class="mt-4">Paginación</h4>
+                <div class="step-guide">
+                    <p>Los listados largos se dividen en páginas:</p>
+                    <ul>
+                        <li>Usa los botones <strong>"Anterior"</strong> y <strong>"Siguiente"</strong> para navegar</li>
+                        <li>Selecciona el número de registros por página (10, 20, 50, 100)</li>
+                        <li>Ve directamente a una página específica usando los números</li>
+                    </ul>
+                </div>
+
+                <h4 class="mt-4">Exportar Datos</h4>
+                <div class="step-guide">
+                    <p>Puedes exportar datos a Excel en varios módulos:</p>
+                    <ol>
+                        <li>Aplica los filtros deseados</li>
+                        <li>Haz clic en el botón <strong>"Exportar"</strong> o <strong>"Exportar SIAGIE"</strong></li>
+                        <li>El archivo se descargará automáticamente</li>
+                    </ol>
+                </div>
+
+                <h4 class="mt-4">Cerrar Sesión</h4>
+                <div class="step-guide">
+                    <ol>
+                        <li>Haz clic en tu nombre de usuario en la esquina superior derecha</li>
+                        <li>Selecciona <strong>"Cerrar Sesión"</strong></li>
+                        <li>Serás redirigido a la página de login</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- Preguntas Frecuentes -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-question-circle"></i> Preguntas Frecuentes
+                </h2>
+
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#faq1">
+                                ¿Cómo cambio mi contraseña?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Actualmente, para cambiar tu contraseña debes contactar al administrador del sistema.
+                                En futuras versiones se habilitará la opción de cambio de contraseña desde el perfil de
+                                usuario.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#faq2">
+                                ¿Puedo editar una nota después de registrarla?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Sí, los docentes pueden editar las notas que han registrado. Solo haz clic en el botón
+                                "Editar"
+                                junto a la nota que deseas modificar. Todas las modificaciones quedan registradas en el
+                                sistema de auditoría.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#faq3">
+                                ¿Cómo sé si una alerta fue enviada a los padres?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Las alertas se generan automáticamente cuando se registra una nota por debajo del
+                                umbral.
+                                El sistema crea una notificación en la cola de envío (Outbox). Los administradores
+                                pueden
+                                verificar el estado de las notificaciones en el módulo de administración.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#faq4">
+                                ¿Qué hago si no veo mis clases asignadas?
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Si eres docente y no ves tus clases, contacta al administrador. Es posible que las
+                                clases
+                                aún no hayan sido creadas o que no hayas sido asignado correctamente como docente de la
+                                clase.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#faq5">
+                                ¿Puedo ver las notas de periodos anteriores?
+                            </button>
+                        </h2>
+                        <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Sí, el sistema mantiene un historial completo de todas las notas. Usa los filtros de
+                                periodo
+                                para seleccionar bimestres, trimestres o años anteriores.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Soporte -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-headset"></i> Soporte Técnico
+                </h2>
+
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-envelope me-2"></i>¿Necesitas ayuda?</h5>
+                    <p>Si tienes problemas o preguntas sobre el uso del sistema, contacta al administrador de tu
+                        institución.</p>
+                    <p class="mb-0">
+                        <strong>Documentación adicional:</strong>
+                    <ul>
+                        <li>Guía de Inicio: <code>docs/GUIA_INICIO.html</code></li>
+                        <li>Instrucciones: <code>docs/INSTRUCCIONES.html</code></li>
+                        <li>README: <code>README.md</code></li>
+                    </ul>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <div class="text-center mt-5 pt-4 border-top">
+                <p class="text-muted">
+                    <strong>Manual de Usuario</strong> - Sistema de Gestión de Notas
+                </p>
+                <p class="text-muted small">
+                    Actualizado: Diciembre 2025 | Versión: 1.0.0
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

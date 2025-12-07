@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Documentación de Proceso - Sistema de Gestión de Notas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .doc-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .doc-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .doc-content {
+            padding: 3rem 2rem;
+        }
+
+        .section-title {
+            color: var(--primary);
+            font-size: 2rem;
+            margin: 2rem 0 1.5rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        /* Menú de Navegación Sticky */
+        .nav-menu {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-menu .nav-link {
+            color: white !important;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+            border-radius: 5px;
+            margin: 0 0.25rem;
+        }
+
+        .nav-menu .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-menu .nav-link.active {
+            background: rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+        }
+
+        .nav-menu .navbar-brand {
+            color: white !important;
+            font-weight: bold;
+        }
+
+        .requirement-card {
+            border-left: 4px solid var(--primary);
+            background: #f8f9fa;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .risk-card {
+            border-left: 4px solid var(--danger);
+            background: #fff5f5;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .user-story {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .acceptance-criteria {
+            background: #f0fdf4;
+            border-left: 3px solid var(--success);
+            padding: 1rem;
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Menú de Navegación -->
+    <nav class="navbar navbar-expand-lg nav-menu">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <i class="bi bi-house-door-fill"></i> Documentación SGA
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="1_DOCUMENTACION_PROCESO.html">
+                            <i class="bi bi-diagram-3"></i> Proceso
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="2_DOCUMENTACION_PRODUCTO.html">
+                            <i class="bi bi-box-seam"></i> Producto
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="3_DOCUMENTACION_OPERACIONES.html">
+                            <i class="bi bi-gear-fill"></i> Operaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="4_DOCUMENTACION_USUARIO.html">
+                            <i class="bi bi-person-fill"></i> Usuario
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="5_DOCUMENTACION_NEGOCIO.html">
+                            <i class="bi bi-briefcase-fill"></i> Negocio
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>📋 Documentación de Proceso</h1>
+            <p style="font-size: 1.2rem;">Sistema de Gestión de Notas - Desarrollo Completado</p>
+            <div style="margin-top: 1.5rem;">
+                <span class="badge bg-success" style="font-size: 1.1rem; padding: 0.75rem 1.5rem;">
+                    ✅ PROYECTO 100% COMPLETADO
+                </span>
+            </div>
+        </div>
+
+        <div class="doc-content">
+            <!-- 1. BACKLOG Y REQUERIMIENTOS -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-list-check"></i> 1. Backlog y Requerimientos
+                </h2>
+
+                <h4 class="mt-4">1.1 Requerimientos Funcionales</h4>
+
+                <div class="requirement-card">
+                    <h6><strong>RF-001:</strong> Gestión de Usuarios y Autenticación</h6>
+                    <p class="mb-1">El sistema debe permitir el registro, login y gestión de usuarios con tres roles:
+                        ADMIN, DOCENTE y PADRE.</p>
+                    <small class="text-muted">Prioridad: ALTA | Estado: ✅ Completado</small>
+                </div>
+
+                <div class="requirement-card">
+                    <h6><strong>RF-002:</strong> Gestión Académica</h6>
+                    <p class="mb-1">El sistema debe permitir la gestión completa de grados, secciones, cursos, clases y
+                        periodos académicos.</p>
+                    <small class="text-muted">Prioridad: ALTA | Estado: ✅ Completado</small>
+                </div>
+
+                <div class="requirement-card">
+                    <h6><strong>RF-003:</strong> Gestión de Personas</h6>
+                    <p class="mb-1">El sistema debe permitir la gestión de alumnos, padres y sus relaciones familiares.
+                    </p>
+                    <small class="text-muted">Prioridad: ALTA | Estado: ✅ Completado</small>
+                </div>
+
+                <div class="requirement-card">
+                    <h6><strong>RF-004:</strong> Gestión de Notas y Evaluaciones</h6>
+                    <p class="mb-1">El sistema debe permitir el registro de notas con soporte para escalas numéricas
+                        (0-20) y literales (AD-A-B-C).</p>
+                    <small class="text-muted">Prioridad: ALTA | Estado: ✅ Completado</small>
+                </div>
+
+                <div class="requirement-card">
+                    <h6><strong>RF-005:</strong> Sistema de Alertas</h6>
+                    <p class="mb-1">El sistema debe generar alertas automáticas cuando un alumno obtenga notas por
+                        debajo del umbral configurado.</p>
+                    <small class="text-muted">Prioridad: MEDIA | Estado: ✅ Completado</small>
+                </div>
+
+                <h4 class="mt-4">1.2 Requerimientos No Funcionales</h4>
+
+                <div class="requirement-card">
+                    <h6><strong>RNF-001:</strong> Seguridad</h6>
+                    <p class="mb-1">El sistema debe implementar autenticación JWT y control de acceso basado en roles
+                        (RBAC).</p>
+                    <small class="text-muted">Estado: ✅ Implementado con JWT + Bcrypt</small>
+                </div>
+
+                <div class="requirement-card">
+                    <h6><strong>RNF-002:</strong> Escalabilidad</h6>
+                    <p class="mb-1">El sistema debe estar diseñado con arquitectura de microservicios para permitir
+                        escalamiento horizontal.</p>
+                    <small class="text-muted">Estado: ✅ 4 microservicios independientes</small>
+                </div>
+
+                <div class="requirement-card">
+                    <h6><strong>RNF-003:</strong> Mantenibilidad</h6>
+                    <p class="mb-1">El código debe seguir principios SOLID y arquitectura hexagonal para facilitar el
+                        mantenimiento.</p>
+                    <small class="text-muted">Estado: ✅ Arquitectura Hexagonal implementada</small>
+                </div>
+
+                <div class="requirement-card">
+                    <h6><strong>RNF-004:</strong> Disponibilidad</h6>
+                    <p class="mb-1">El sistema debe estar desplegado en Kubernetes para garantizar alta disponibilidad.
+                    </p>
+                    <small class="text-muted">Estado: ✅ Desplegado en K8s Local y Azure</small>
+                </div>
+
+                <h4 class="mt-4">1.3 Historias de Usuario Principales</h4>
+
+                <div class="user-story">
+                    <h6><i class="bi bi-person-circle"></i> <strong>HU-001:</strong> Como ADMIN, quiero gestionar
+                        usuarios</h6>
+                    <p class="mb-2"><strong>Descripción:</strong> Como administrador del sistema, necesito poder crear,
+                        editar y desactivar usuarios para mantener el control de accesos.</p>
+                    <div class="acceptance-criteria">
+                        <strong>Criterios de Aceptación:</strong>
+                        <ul class="mb-0 mt-1">
+                            <li>✅ Puedo crear usuarios con email, password y rol</li>
+                            <li>✅ Puedo editar información de usuarios existentes</li>
+                            <li>✅ Puedo activar/desactivar usuarios</li>
+                            <li>✅ Solo usuarios ADMIN pueden gestionar usuarios</li>
+                        </ul>
+                    </div>
+                    <small class="text-success mt-2 d-block"><strong>Estado:</strong> ✅ Completado en Sprint 2</small>
+                </div>
+
+                <div class="user-story">
+                    <h6><i class="bi bi-book"></i> <strong>HU-002:</strong> Como DOCENTE, quiero registrar notas</h6>
+                    <p class="mb-2"><strong>Descripción:</strong> Como docente, necesito poder registrar las
+                        calificaciones de mis alumnos de forma rápida y sencilla.</p>
+                    <div class="acceptance-criteria">
+                        <strong>Criterios de Aceptación:</strong>
+                        <ul class="mb-0 mt-1">
+                            <li>✅ Puedo ver solo las clases que tengo asignadas</li>
+                            <li>✅ Puedo registrar notas numéricas (0-20) o literales (AD-A-B-C)</li>
+                            <li>✅ El sistema valida que la nota esté en el rango permitido</li>
+                            <li>✅ Se genera alerta automática si la nota es baja</li>
+                        </ul>
+                    </div>
+                    <small class="text-success mt-2 d-block"><strong>Estado:</strong> ✅ Completado en Sprint 2</small>
+                </div>
+
+                <div class="user-story">
+                    <h6><i class="bi bi-people"></i> <strong>HU-003:</strong> Como PADRE, quiero consultar notas de mis
+                        hijos</h6>
+                    <p class="mb-2"><strong>Descripción:</strong> Como padre de familia, necesito poder ver las
+                        calificaciones de mis hijos para hacer seguimiento de su rendimiento académico.</p>
+                    <div class="acceptance-criteria">
+                        <strong>Criterios de Aceptación:</strong>
+                        <ul class="mb-0 mt-1">
+                            <li>✅ Puedo ver solo las notas de mis hijos vinculados</li>
+                            <li>✅ Puedo ver el historial de notas por periodo</li>
+                            <li>✅ Recibo alertas cuando hay notas bajas</li>
+                            <li>✅ Puedo marcar alertas como leídas</li>
+                        </ul>
+                    </div>
+                    <small class="text-success mt-2 d-block"><strong>Estado:</strong> ✅ Completado en Sprint 3</small>
+                </div>
+            </section>
+
+            <!-- 2. PLANIFICACIÓN -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-calendar3"></i> 2. Planificación del Proyecto
+                </h2>
+
+                <h4>2.1 Cronograma de Sprints</h4>
+                <table class="table table-bordered">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Sprint</th>
+                            <th>Fechas</th>
+                            <th>Duración</th>
+                            <th>Objetivo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Sprint 1</strong></td>
+                            <td>01/Sep - 18/Sep/2025</td>
+                            <td>17 días</td>
+                            <td>Planificación y organización inicial</td>
+                            <td><span class="badge bg-success">✅ Completado</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sprint 2</strong></td>
+                            <td>19/Sep - 12/Oct/2025</td>
+                            <td>23 días</td>
+                            <td>Desarrollo y prototipado</td>
+                            <td><span class="badge bg-success">✅ Completado</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sprint 3</strong></td>
+                            <td>13/Oct - 30/Nov/2025</td>
+                            <td>48 días</td>
+                            <td>Validación y optimización</td>
+                            <td><span class="badge bg-success">✅ Completado 06/Dic</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sprint 4</strong></td>
+                            <td>01/Nov - 07/Dic/2025</td>
+                            <td>36 días</td>
+                            <td>Entrega final y cierre</td>
+                            <td><span class="badge bg-success">✅ Completado 06/Dic</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 class="mt-4">2.2 Tareas Planificadas vs Ejecutadas</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">Sprint 1 - Planificación</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Planificadas:</strong> 7 tareas</p>
+                                <p><strong>Ejecutadas:</strong> 7 tareas</p>
+                                <p class="mb-0"><strong>Completitud:</strong> <span class="badge bg-success">100%</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">Sprint 2 - Desarrollo</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Planificadas:</strong> 12 tareas</p>
+                                <p><strong>Ejecutadas:</strong> 12 tareas</p>
+                                <p class="mb-0"><strong>Completitud:</strong> <span class="badge bg-success">100%</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">Sprint 3 - Validación</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Planificadas:</strong> 9 tareas</p>
+                                <p><strong>Ejecutadas:</strong> 9 tareas</p>
+                                <p class="mb-0"><strong>Completitud:</strong> <span class="badge bg-success">100%</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">Sprint 4 - Entrega</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Planificadas:</strong> 7 tareas</p>
+                                <p><strong>Ejecutadas:</strong> 7 tareas</p>
+                                <p class="mb-0"><strong>Completitud:</strong> <span class="badge bg-success">100%</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. GESTIÓN DE RIESGOS -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-exclamation-triangle"></i> 3. Gestión de Riesgos
+                </h2>
+
+                <div class="risk-card">
+                    <h6><strong>RIESGO-001:</strong> Complejidad de la Arquitectura Hexagonal</h6>
+                    <p class="mb-1"><strong>Probabilidad:</strong> Media | <strong>Impacto:</strong> Alto</p>
+                    <p class="mb-1"><strong>Descripción:</strong> El equipo tiene poca experiencia con arquitectura
+                        hexagonal, lo que podría retrasar el desarrollo.</p>
+                    <p class="mb-1"><strong>Mitigación:</strong> Capacitación inicial en Sprint 1, revisiones de código
+                        frecuentes.</p>
+                    <p class="mb-0"><strong>Estado:</strong> <span class="badge bg-success">✅ Mitigado - No se
+                            materializó</span></p>
+                </div>
+
+                <div class="risk-card">
+                    <h6><strong>RIESGO-002:</strong> Integración entre Microservicios</h6>
+                    <p class="mb-1"><strong>Probabilidad:</strong> Alta | <strong>Impacto:</strong> Alto</p>
+                    <p class="mb-1"><strong>Descripción:</strong> La comunicación entre microservicios podría generar
+                        problemas de sincronización.</p>
+                    <p class="mb-1"><strong>Mitigación:</strong> Implementar patrón Outbox, pruebas de integración
+                        exhaustivas.</p>
+                    <p class="mb-0"><strong>Estado:</strong> <span class="badge bg-success">✅ Mitigado - Patrón Outbox
+                            implementado</span></p>
+                </div>
+
+                <div class="risk-card">
+                    <h6><strong>RIESGO-003:</strong> Deployment en Kubernetes</h6>
+                    <p class="mb-1"><strong>Probabilidad:</strong> Media | <strong>Impacto:</strong> Medio</p>
+                    <p class="mb-1"><strong>Descripción:</strong> Problemas de configuración en Kubernetes podrían
+                        retrasar el deployment.</p>
+                    <p class="mb-1"><strong>Mitigación:</strong> Pruebas en ambiente local con ArgoCD antes de Azure.
+                    </p>
+                    <p class="mb-0"><strong>Estado:</strong> <span class="badge bg-success">✅ Mitigado - Deployment
+                            exitoso</span></p>
+                </div>
+
+                <div class="risk-card">
+                    <h6><strong>RIESGO-004:</strong> Tiempo Insuficiente para Testing</h6>
+                    <p class="mb-1"><strong>Probabilidad:</strong> Alta | <strong>Impacto:</strong> Alto</p>
+                    <p class="mb-1"><strong>Descripción:</strong> El tiempo asignado para pruebas podría ser
+                        insuficiente.</p>
+                    <p class="mb-1"><strong>Mitigación:</strong> Testing continuo desde Sprint 2, automatización de
+                        pruebas.</p>
+                    <p class="mb-0"><strong>Estado:</strong> <span class="badge bg-success">✅ Mitigado - Sprint 3
+                            extendido para QA</span></p>
+                </div>
+            </section>
+
+            <!-- 4. CAMBIOS DE ALCANCE -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-arrow-left-right"></i> 4. Cambios de Alcance
+                </h2>
+
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle me-2"></i>Control de Cambios</h6>
+                    <p class="mb-0">Durante el desarrollo del proyecto se registraron los siguientes cambios de alcance:
+                    </p>
+                </div>
+
+                <table class="table table-bordered">
+                    <thead class="table-info">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Cambio</th>
+                            <th>Justificación</th>
+                            <th>Impacto</th>
+                            <th>Aprobado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>25/Sep/2025</td>
+                            <td>Agregar soporte para escalas literales (AD-A-B-C)</td>
+                            <td>Requerimiento del cliente para nivel inicial</td>
+                            <td>+3 días Sprint 2</td>
+                            <td><span class="badge bg-success">✅ Sí</span></td>
+                        </tr>
+                        <tr>
+                            <td>15/Oct/2025</td>
+                            <td>Implementar deployment en Azure además de local</td>
+                            <td>Demostración en ambiente cloud</td>
+                            <td>+5 días Sprint 3</td>
+                            <td><span class="badge bg-success">✅ Sí</span></td>
+                        </tr>
+                        <tr>
+                            <td>20/Nov/2025</td>
+                            <td>Extender Sprint 3 para más pruebas</td>
+                            <td>Asegurar calidad del producto</td>
+                            <td>+6 días Sprint 3</td>
+                            <td><span class="badge bg-success">✅ Sí</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- 5. EVIDENCIAS DEL PROCESO -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-file-earmark-check"></i> 5. Evidencias del Proceso
+                </h2>
+
+                <h4>5.1 Actas de Reuniones</h4>
+                <div class="accordion" id="meetingsAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#meeting1">
+                                Sprint Planning - Sprint 1 (01/Sep/2025)
+                            </button>
+                        </h2>
+                        <div id="meeting1" class="accordion-collapse collapse" data-bs-parent="#meetingsAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Asistentes:</strong> Miguel Valverde (PO), Emerson Quispe (SM), Karina
+                                    Torres, Wilhelm Mallqui, Kelly Sichez</p>
+                                <p><strong>Objetivo:</strong> Definir alcance del Sprint 1</p>
+                                <p><strong>Acuerdos:</strong></p>
+                                <ul>
+                                    <li>Definir metodología Scrum con sprints de 2-4 semanas</li>
+                                    <li>Seleccionar stack tecnológico: Python/FastAPI + MySQL</li>
+                                    <li>Adoptar arquitectura hexagonal</li>
+                                    <li>Crear product backlog inicial</li>
+                                </ul>
+                                <p class="mb-0"><strong>Resultado:</strong> ✅ Sprint 1 planificado exitosamente</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#meeting2">
+                                Sprint Review - Sprint 2 (12/Oct/2025)
+                            </button>
+                        </h2>
+                        <div id="meeting2" class="accordion-collapse collapse" data-bs-parent="#meetingsAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Asistentes:</strong> Equipo completo + Stakeholders</p>
+                                <p><strong>Demostración:</strong> Prototipo funcional con 4 microservicios</p>
+                                <p><strong>Feedback:</strong></p>
+                                <ul>
+                                    <li>✅ Arquitectura aprobada</li>
+                                    <li>✅ CRUDs funcionando correctamente</li>
+                                    <li>📝 Solicitud: Agregar deployment en cloud</li>
+                                </ul>
+                                <p class="mb-0"><strong>Resultado:</strong> ✅ Sprint 2 aceptado, cambio de alcance
+                                    aprobado</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#meeting3">
+                                Sprint Retrospective - Sprint 4 (06/Dic/2025)
+                            </button>
+                        </h2>
+                        <div id="meeting3" class="accordion-collapse collapse" data-bs-parent="#meetingsAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Asistentes:</strong> Equipo Scrum completo</p>
+                                <p><strong>Qué funcionó bien:</strong></p>
+                                <ul>
+                                    <li>✅ Arquitectura hexagonal facilitó el mantenimiento</li>
+                                    <li>✅ Microservicios permitieron trabajo paralelo</li>
+                                    <li>✅ Kubernetes simplificó deployment</li>
+                                </ul>
+                                <p><strong>Qué mejorar:</strong></p>
+                                <ul>
+                                    <li>📝 Implementar CI/CD completo</li>
+                                    <li>📝 Aumentar cobertura de tests</li>
+                                    <li>📝 Agregar monitoring centralizado</li>
+                                </ul>
+                                <p class="mb-0"><strong>Resultado:</strong> ✅ Proyecto completado exitosamente</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">5.2 Capturas de Jira</h4>
+                <div class="alert alert-primary">
+                    <p class="mb-2"><i class="bi bi-file-earmark-spreadsheet me-2"></i><strong>Archivo de
+                            Tracking:</strong></p>
+                    <p class="mb-0">Todas las tareas, sprints y estados están documentados en:
+                        <code>docs/Jira.csv</code>
+                    </p>
+                    <p class="mb-0 mt-2"><strong>Última actualización:</strong> 06/Dic/2025 9:33 PM</p>
+                    <p class="mb-0"><strong>Total de tareas:</strong> 35 tareas completadas</p>
+                </div>
+            </section>
+
+            <!-- 6. EQUIPO -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-people-fill"></i> 6. Equipo del Proyecto
+                </h2>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border-primary mb-3">
+                            <div class="card-body">
+                                <h5>🟨 Miguel Valverde</h5>
+                                <p class="mb-1"><strong>Rol Scrum:</strong> Product Owner (PO)</p>
+                                <p class="mb-0"><strong>Rol Técnico:</strong> Coordinador técnico / Soporte CI/CD</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-primary mb-3">
+                            <div class="card-body">
+                                <h5>🟦 Emerson Quispe</h5>
+                                <p class="mb-1"><strong>Rol Scrum:</strong> Scrum Master (SM)</p>
+                                <p class="mb-0"><strong>Rol Técnico:</strong> Arquitecto de Infraestructura / DevOps</p>
+                                <p class="mt-2 small text-muted">
+                                    <i class="bi bi-github me-1"></i>
+                                    <a href="https://github.com/emedayinc17" target="_blank">emedayinc17</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success mb-3">
+                            <div class="card-body">
+                                <h6>🟩 Karina Torres Cahuana</h6>
+                                <p class="mb-1 small"><strong>Rol:</strong> Developer (Full Stack)</p>
+                                <p class="mb-0 small">Backend + Frontend</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success mb-3">
+                            <div class="card-body">
+                                <h6>🟪 Wilhelm Sandro Mallqui Páez</h6>
+                                <p class="mb-1 small"><strong>Rol:</strong> Developer (QA)</p>
+                                <p class="mb-0 small">Tester / Validación</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success mb-3">
+                            <div class="card-body">
+                                <h6>🟧 Kelly Sichez</h6>
+                                <p class="mb-1 small"><strong>Rol:</strong> Developer (Doc/UI)</p>
+                                <p class="mb-0 small">Documentación técnica</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <div class="text-center mt-5 pt-4 border-top">
+                <p class="text-muted">
+                    <strong>Documentación de Proceso</strong> - Sistema de Gestión de Notas
+                </p>
+                <p class="text-success fw-bold">
+                    ✅ Proyecto Finalizado: 06 de Diciembre de 2025
+                </p>
+                <p class="text-muted small">
+                    Versión: 1.0.0 | Actualizado: Diciembre 6, 2025
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

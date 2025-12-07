@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 Sistema de Gestión de Notas - Documentación</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --success: #10b981;
+            --info: #3b82f6;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .hero-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-header p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .content-section {
+            padding: 3rem 2rem;
+        }
+
+        .section-title {
+            color: var(--primary);
+            font-size: 2rem;
+            margin: 2rem 0 1.5rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .doc-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .doc-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .doc-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .doc-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .doc-description {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .doc-meta {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .badge-custom {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            border: 2px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: #6c757d;
+            margin-top: 0.5rem;
+        }
+
+        .quick-links {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .quick-link-btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            margin: 0.5rem;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .quick-link-btn:hover {
+            background: var(--primary-dark);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <!-- Hero Header -->
+        <div class="hero-header">
+            <h1 style="position: relative; z-index: 1;">📚 Sistema de Gestión de Notas</h1>
+            <p style="position: relative; z-index: 1;">Portal de Documentación Completa</p>
+            <div style="position: relative; z-index: 1; margin-top: 1.5rem;">
+                <span class="badge bg-success" style="font-size: 1.1rem; padding: 0.75rem 1.5rem;">✅ PROYECTO 100%
+                    COMPLETADO</span>
+                <span class="badge bg-light text-dark">v1.0.0</span>
+                <span class="badge bg-light text-dark">Diciembre 2025</span>
+                <span class="badge bg-success">Finalizado: 06/Dic/2025</span>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <!-- Bienvenida -->
+            <section>
+                <div class="alert alert-info">
+                    <h4><i class="bi bi-info-circle me-2"></i>Bienvenido a la Documentación</h4>
+                    <p class="mb-0">
+                        Este portal centraliza toda la documentación del Sistema de Gestión de Notas. Aquí encontrarás
+                        guías técnicas, manuales de usuario, información de arquitectura y mucho más. Selecciona el tipo
+                        de documentación que necesitas a continuación.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Estadísticas del Proyecto -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-graph-up"></i> Proyecto en Números
+                </h2>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">100%</div>
+                        <div class="stat-label">Completitud</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">4/4</div>
+                        <div class="stat-label">Sprints Finalizados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">37+</div>
+                        <div class="stat-label">Endpoints REST</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">26</div>
+                        <div class="stat-label">Tablas de BD</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">16,900+</div>
+                        <div class="stat-label">Líneas de Código</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">✅</div>
+                        <div class="stat-label">Finalizado 06/Dic</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Enlaces de Acceso al Sistema -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-link-45deg"></i> Enlaces de Acceso al Sistema
+                </h2>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="bi bi-house me-2"></i>Ambiente Local</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Frontend:</strong></p>
+                                <a href="http://localhost:8080" target="_blank"
+                                    class="btn btn-sm btn-outline-primary mb-2 w-100">
+                                    <i class="bi bi-box-arrow-up-right me-2"></i>http://localhost:8080
+                                </a>
+
+                                <p class="mt-3"><strong>APIs (Swagger):</strong></p>
+                                <a href="http://localhost:8001/docs" target="_blank"
+                                    class="btn btn-sm btn-outline-secondary mb-1 w-100">IAM Service :8001</a>
+                                <a href="http://localhost:8002/docs" target="_blank"
+                                    class="btn btn-sm btn-outline-secondary mb-1 w-100">Académico :8002</a>
+                                <a href="http://localhost:8003/docs" target="_blank"
+                                    class="btn btn-sm btn-outline-secondary mb-1 w-100">Personas :8003</a>
+                                <a href="http://localhost:8004/docs" target="_blank"
+                                    class="btn btn-sm btn-outline-secondary mb-1 w-100">Notas :8004</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="bi bi-cloud me-2"></i>K8s Local (ArgoCD)</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Frontend:</strong></p>
+                                <a href="http://sga.emeday.inc" target="_blank"
+                                    class="btn btn-sm btn-outline-success mb-2 w-100">
+                                    <i class="bi bi-box-arrow-up-right me-2"></i>http://sga.emeday.inc
+                                </a>
+
+                                <p class="mt-3"><strong>Directorio:</strong></p>
+                                <code class="d-block p-2 bg-light rounded">k8s/</code>
+
+                                <p class="mt-3"><strong>ArgoCD App:</strong></p>
+                                <code class="d-block p-2 bg-light rounded small">k8s/frontend/deployapp.yaml</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="bi bi-globe me-2"></i>Azure Kubernetes</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Frontend:</strong></p>
+                                <a href="http://sga.172.189.58.78.nip.io" target="_blank"
+                                    class="btn btn-sm btn-outline-info mb-2 w-100">
+                                    <i class="bi bi-box-arrow-up-right me-2"></i>sga.172.189.58.78.nip.io
+                                </a>
+
+                                <p class="mt-3"><strong>IP Pública:</strong></p>
+                                <code class="d-block p-2 bg-light rounded">172.189.58.78</code>
+
+                                <p class="mt-3"><strong>Directorio:</strong></p>
+                                <code class="d-block p-2 bg-light rounded">k8s_internet/</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>Recursos del Proyecto</h6>
+                    <ul class="mb-0">
+                        <li><strong>GitHub:</strong> <a href="https://github.com/emedayinc17/notas-hexagonal.git"
+                                target="_blank">emedayinc17/notas-hexagonal</a></li>
+                        <li><strong>Docker Hub:</strong> <a href="https://hub.docker.com/u/emeday17"
+                                target="_blank">emeday17</a> (imagen: emeday17/frontend:1.0.0)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Documentación Principal -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-file-earmark-text"></i> Documentación por Tipo
+                </h2>
+
+                <div class="row">
+                    <!-- Doc 1: Proceso -->
+                    <div class="col-md-6">
+                        <a href="1_DOCUMENTACION_PROCESO.html" class="doc-card">
+                            <div class="doc-icon text-primary">
+                                <i class="bi bi-diagram-3"></i>
+                            </div>
+                            <div class="doc-title">1. Documentación de Proceso</div>
+                            <div class="doc-description">
+                                Metodología, fases del proyecto, decisiones técnicas y lecciones aprendidas durante el
+                                desarrollo.
+                            </div>
+                            <div class="doc-meta">
+                                <span class="badge badge-custom bg-warning text-dark">Temporal</span>
+                                <span class="badge badge-custom bg-info text-white">Desarrollo</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Doc 2: Producto -->
+                    <div class="col-md-6">
+                        <a href="2_DOCUMENTACION_PRODUCTO.html" class="doc-card">
+                            <div class="doc-icon text-success">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                            <div class="doc-title">2. Documentación de Producto</div>
+                            <div class="doc-description">
+                                Arquitectura completa, stack tecnológico, servicios, modelo de datos y flujos de
+                                negocio.
+                            </div>
+                            <div class="doc-meta">
+                                <span class="badge badge-custom bg-success text-white">Permanente</span>
+                                <span class="badge badge-custom bg-primary text-white">Técnico</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Doc 3: Operaciones -->
+                    <div class="col-md-6">
+                        <a href="3_DOCUMENTACION_OPERACIONES.html" class="doc-card">
+                            <div class="doc-icon text-danger">
+                                <i class="bi bi-gear"></i>
+                            </div>
+                            <div class="doc-title">3. Documentación de Operaciones</div>
+                            <div class="doc-description">
+                                Instalación, configuración, deployment, mantenimiento y troubleshooting del sistema.
+                            </div>
+                            <div class="doc-meta">
+                                <span class="badge badge-custom bg-danger text-white">Crítico</span>
+                                <span class="badge badge-custom bg-dark text-white">DevOps</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Doc 4: Usuario -->
+                    <div class="col-md-6">
+                        <a href="4_DOCUMENTACION_USUARIO.html" class="doc-card">
+                            <div class="doc-icon text-info">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <div class="doc-title">4. Documentación de Usuario (UX)</div>
+                            <div class="doc-description">
+                                Manual completo para usuarios finales: administradores, docentes y padres de familia.
+                            </div>
+                            <div class="doc-meta">
+                                <span class="badge badge-custom bg-info text-white">Esencial</span>
+                                <span class="badge badge-custom bg-secondary text-white">Usuario Final</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Doc 5: Negocio -->
+                    <div class="col-md-6">
+                        <a href="5_DOCUMENTACION_NEGOCIO.html" class="doc-card">
+                            <div class="doc-icon" style="color: #764ba2;">
+                                <i class="bi bi-briefcase"></i>
+                            </div>
+                            <div class="doc-title">5. Documentación de Negocio</div>
+                            <div class="doc-description">
+                                Resumen ejecutivo, objetivos, alcance, ROI, beneficios y recomendaciones futuras.
+                            </div>
+                            <div class="doc-meta">
+                                <span class="badge badge-custom"
+                                    style="background: #764ba2; color: white;">Ejecutivo</span>
+                                <span class="badge badge-custom bg-warning text-dark">Estratégico</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Guía de Inicio -->
+                    <div class="col-md-6">
+                        <a href="GUIA_INICIO.html" class="doc-card">
+                            <div class="doc-icon text-success">
+                                <i class="bi bi-rocket-takeoff"></i>
+                            </div>
+                            <div class="doc-title">Guía de Inicio Rápido</div>
+                            <div class="doc-description">
+                                Pasos rápidos para poner en marcha el sistema. Ideal para comenzar rápidamente.
+                            </div>
+                            <div class="doc-meta">
+                                <span class="badge badge-custom bg-success text-white">Quick Start</span>
+                                <span class="badge badge-custom bg-light text-dark">5 minutos</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Visor de Archivos -->
+                    <div class="col-md-6">
+                        <a href="visor_archivos.html" class="doc-card">
+                            <div class="doc-icon text-warning">
+                                <i class="bi bi-file-earmark-code"></i>
+                            </div>
+                            <div class="doc-title">Visor de Archivos</div>
+                            <div class="doc-description">
+                                Visualiza archivos Markdown, CSV y Python de la documentación directamente en el
+                                navegador.
+                            </div>
+                            <div class="doc-meta">
+                                <span class="badge badge-custom bg-warning text-dark">Herramienta</span>
+                                <span class="badge badge-custom bg-light text-dark">MD, CSV, PY</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Enlaces Rápidos -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-lightning"></i> Accesos Rápidos
+                </h2>
+
+                <div class="quick-links">
+                    <h5 class="mb-3">Recursos Adicionales</h5>
+                    <a href="../README.md" class="quick-link-btn">
+                        <i class="bi bi-file-text me-2"></i>README Principal
+                    </a>
+                    <a href="ARQUITECTURA_COMPLETA.md" class="quick-link-btn">
+                        <i class="bi bi-diagram-3 me-2"></i>Arquitectura Detallada
+                    </a>
+                    <a href="http://localhost:8001/docs" class="quick-link-btn" target="_blank">
+                        <i class="bi bi-code-slash me-2"></i>API Docs (Swagger)
+                    </a>
+                    <a href="http://localhost:8080" class="quick-link-btn" target="_blank">
+                        <i class="bi bi-globe me-2"></i>Aplicación Web
+                    </a>
+                </div>
+            </section>
+
+            <!-- Documentación Disponible -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-folder2-open"></i> Documentación Disponible
+                </h2>
+
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-info-circle me-2"></i>Archivos de Documentación</h5>
+                    <p class="mb-0">
+                        Todos los archivos Markdown, CSV y Python están disponibles en la carpeta
+                        <code>archivos/</code>.
+                        Usa el <strong>Visor de Archivos</strong> para visualizarlos directamente en el navegador.
+                    </p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Archivos Markdown</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2">
+                                        <a href="visor_archivos.html" class="text-decoration-none">
+                                            <i class="bi bi-eye me-2"></i>README_DOCUMENTACION.md
+                                        </a>
+                                    </li>
+                                    <li class="mb-2">
+                                        <a href="visor_archivos.html" class="text-decoration-none">
+                                            <i class="bi bi-eye me-2"></i>PROYECTO_COMPLETADO.md
+                                        </a>
+                                    </li>
+                                    <li class="mb-2">
+                                        <a href="visor_archivos.html" class="text-decoration-none">
+                                            <i class="bi bi-eye me-2"></i>ALINEACION_COMPLETA.md
+                                        </a>
+                                    </li>
+                                    <li class="mb-2">
+                                        <a href="visor_archivos.html" class="text-decoration-none">
+                                            <i class="bi bi-eye me-2"></i>ACTUALIZACION_FINAL.md
+                                        </a>
+                                    </li>
+                                    <li class="mb-2">
+                                        <a href="visor_archivos.html" class="text-decoration-none">
+                                            <i class="bi bi-eye me-2"></i>DOCUMENTACION_100_COMPLETA.md
+                                        </a>
+                                    </li>
+                                    <li class="mb-2">
+                                        <a href="visor_archivos.html" class="text-decoration-none">
+                                            <i class="bi bi-eye me-2"></i>DOCUMENTACION_PERFECTA_18_SCREENSHOTS.md
+                                        </a>
+                                    </li>
+                                    <li class="mb-2">
+                                        <a href="visor_archivos.html" class="text-decoration-none">
+                                            <i class="bi bi-eye me-2"></i>MENU_NAVEGACION_AGREGADO.md
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="bi bi-file-earmark-code me-2"></i>Otros Archivos</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2">
+                                        <a href="visor_archivos.html" class="text-decoration-none">
+                                            <i class="bi bi-eye me-2 text-success"></i>Jira.csv
+                                        </a>
+                                        <span class="badge bg-success ms-2">CSV</span>
+                                    </li>
+                                    <li class="mb-2">
+                                        <a href="visor_archivos.html" class="text-decoration-none">
+                                            <i class="bi bi-eye me-2 text-warning"></i>add_navigation_menu.py
+                                        </a>
+                                        <span class="badge bg-warning text-dark ms-2">Python</span>
+                                    </li>
+                                </ul>
+                                <hr>
+                                <p class="small text-muted mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Todos los archivos se pueden visualizar usando el <strong>Visor de Archivos</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Información del Sistema -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-info-circle"></i> Información del Sistema
+                </h2>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="bi bi-stack me-2"></i>Stack Tecnológico</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li><strong>Backend:</strong> Python 3.10+, FastAPI</li>
+                                    <li><strong>Frontend:</strong> HTML5, CSS3, JavaScript</li>
+                                    <li><strong>Base de Datos:</strong> MySQL 8.0</li>
+                                    <li><strong>Deployment:</strong> Docker, Kubernetes</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="bi bi-server me-2"></i>Servicios</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li><strong>IAM Service:</strong> Puerto 8001</li>
+                                    <li><strong>Académico Service:</strong> Puerto 8002</li>
+                                    <li><strong>Personas Service:</strong> Puerto 8003</li>
+                                    <li><strong>Notas Service:</strong> Puerto 8004</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="bi bi-people me-2"></i>Roles</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li><strong>ADMIN:</strong> Gestión completa</li>
+                                    <li><strong>DOCENTE:</strong> Registro de notas</li>
+                                    <li><strong>PADRE:</strong> Consulta de notas</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Credenciales de Prueba -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-key"></i> Credenciales de Prueba
+                </h2>
+
+                <div class="alert alert-warning">
+                    <h5><i class="bi bi-exclamation-triangle me-2"></i>Ambiente de Desarrollo</h5>
+                    <p>Usa estas credenciales para probar el sistema:</p>
+
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <strong>ADMIN</strong><br>
+                            <code>admin@colegio.com</code><br>
+                            <code>Admin123!</code>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>DOCENTE</strong><br>
+                            <code>docente@colegio.com</code><br>
+                            <code>Docente123!</code>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>PADRE</strong><br>
+                            <code>padre@example.com</code><br>
+                            <code>Padre123!</code>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <div class="text-center mt-5 pt-4 border-top">
+                <p class="text-muted">
+                    <strong>Sistema de Gestión de Notas</strong> - Portal de Documentación
+                </p>
+                <p class="text-muted small">
+                    Versión 1.0.0 | Actualizado: Diciembre 2025
+                </p>
+                <p class="text-muted small">
+                    <i class="bi bi-github me-2"></i>
+                    Desarrollado con <i class="bi bi-heart-fill text-danger"></i> usando Arquitectura Hexagonal
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

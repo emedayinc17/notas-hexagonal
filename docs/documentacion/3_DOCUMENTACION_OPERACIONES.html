@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ Documentación de Operaciones - Sistema de Gestión de Notas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .doc-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .doc-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .doc-content {
+            padding: 3rem 2rem;
+        }
+
+        .section-title {
+            color: var(--primary);
+            font-size: 2rem;
+            margin: 2rem 0 1.5rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .environment-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            transition: all 0.3s ease;
+        }
+
+        .environment-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .troubleshooting-item {
+            background: #fff5f5;
+            border-left: 4px solid var(--danger);
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+    
+        /* Menú de Navegación Sticky */
+        .nav-menu {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-menu .nav-link {
+            color: white !important;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+            border-radius: 5px;
+            margin: 0 0.25rem;
+        }
+
+        .nav-menu .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-menu .nav-link.active {
+            background: rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+        }
+
+        .nav-menu .navbar-brand {
+            color: white !important;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+
+<body>
+    <!-- Menú de Navegación -->
+    <nav class="navbar navbar-expand-lg nav-menu">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <i class="bi bi-house-door-fill"></i> Documentación SGA
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link " href="1_DOCUMENTACION_PROCESO.html">
+                            <i class="bi bi-diagram-3"></i> Proceso
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="2_DOCUMENTACION_PRODUCTO.html">
+                            <i class="bi bi-box-seam"></i> Producto
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="3_DOCUMENTACION_OPERACIONES.html">
+                            <i class="bi bi-gear-fill"></i> Operaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="4_DOCUMENTACION_USUARIO.html">
+                            <i class="bi bi-person-fill"></i> Usuario
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="5_DOCUMENTACION_NEGOCIO.html">
+                            <i class="bi bi-briefcase-fill"></i> Negocio
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="doc-container">
+        <div class="doc-header">
+            <h1>⚙️ Documentación de Operaciones</h1>
+            <p style="font-size: 1.2rem;">Manual Técnico y Runbook - Sistema de Gestión de Notas</p>
+            <div style="margin-top: 1.5rem;">
+                <span class="badge bg-success">v1.0.0</span>
+                <span class="badge bg-light text-dark">3 Ambientes</span>
+            </div>
+        </div>
+
+        <div class="doc-content">
+            <!-- 1. ARQUITECTURA DE DESPLIEGUE -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-diagram-3"></i> 1. Arquitectura de Despliegue
+                </h2>
+
+                <h4>1.1 Diagrama de Nodos</h4>
+                <div class="code-block">
+                    <pre>
+┌─────────────────────────────────────────────────────────────────────┐
+│                        AMBIENTES DE DESPLIEGUE                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  AMBIENTE 1: LOCAL (Desarrollo)                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+┌──────────────────┐
+│  Máquina Local   │
+│  Windows/Linux   │
+├──────────────────┤
+│  Frontend:8080   │ ← Nginx Alpine
+│  IAM:8001        │ ← Python/FastAPI
+│  Académico:8002  │ ← Python/FastAPI
+│  Personas:8003   │ ← Python/FastAPI
+│  Notas:8004      │ ← Python/FastAPI
+│  MySQL:3306      │ ← MySQL 8.0
+└──────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  AMBIENTE 2: KUBERNETES LOCAL (ArgoCD)                            ║
+╚═══════════════════════════════════════════════════════════════════╝
+┌─────────────────────────────────────────────────────────────────┐
+│  Kubernetes Cluster (Local)                                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Namespace: sga                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  Ingress: http://sga.emeday.inc                         │   │
+│  │  ┌──────────────────────────────────────────────────┐   │   │
+│  │  │  Frontend Pod (emeday17/frontend:1.0.0)          │   │   │
+│  │  │  - Replicas: 2                                   │   │   │
+│  │  │  - Port: 80                                      │   │   │
+│  │  │  - ConfigMap: config.js                          │   │   │
+│  │  └──────────────────────────────────────────────────┘   │   │
+│  │  ┌──────────────────────────────────────────────────┐   │   │
+│  │  │  Backend Pods (4 microservicios)                 │   │   │
+│  │  │  - IAM (emeday17/iam:1.0.0)                      │   │   │
+│  │  │  - Académico (emeday17/academico:1.0.0)          │   │   │
+│  │  │  - Personas (emeday17/personas:1.0.0)            │   │   │
+│  │  │  - Notas (emeday17/notas:1.0.0)                  │   │   │
+│  │  └──────────────────────────────────────────────────┘   │   │
+│  │  ┌──────────────────────────────────────────────────┐   │   │
+│  │  │  MySQL StatefulSet                               │   │   │
+│  │  │  - PersistentVolume: 10Gi                        │   │   │
+│  │  └──────────────────────────────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  ArgoCD (GitOps)                                        │   │
+│  │  - Repo: github.com/emedayinc17/notas-hexagonal.git    │   │
+│  │  - Path: k8s/frontend/overlays/prod                    │   │
+│  │  - Auto-sync: Enabled                                  │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  AMBIENTE 3: AZURE KUBERNETES SERVICE (Internet)                  ║
+╚═══════════════════════════════════════════════════════════════════╝
+┌─────────────────────────────────────────────────────────────────┐
+│  Azure AKS Cluster                                              │
+│  IP Pública: 172.189.58.78                                      │
+├─────────────────────────────────────────────────────────────────┤
+│  Namespace: sga                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  Ingress: http://sga.172.189.58.78.nip.io              │   │
+│  │  ┌──────────────────────────────────────────────────┐   │   │
+│  │  │  Frontend Pod (emeday17/frontend:1.0.0)          │   │   │
+│  │  │  - Replicas: 3 (alta disponibilidad)            │   │   │
+│  │  │  - LoadBalancer Service                          │   │   │
+│  │  └──────────────────────────────────────────────────┘   │   │
+│  │  ┌──────────────────────────────────────────────────┐   │   │
+│  │  │  Backend Pods (4 microservicios)                 │   │   │
+│  │  │  - Replicas: 2 cada uno                          │   │   │
+│  │  │  - Azure Container Registry                      │   │   │
+│  │  └──────────────────────────────────────────────────┘   │   │
+│  │  ┌──────────────────────────────────────────────────┐   │   │
+│  │  │  Azure Database for MySQL                        │   │   │
+│  │  │  - Tier: General Purpose                         │   │   │
+│  │  │  - Backup: Automático diario                     │   │   │
+│  │  └──────────────────────────────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+</pre>
+                </div>
+
+                <h4 class="mt-4">1.2 Especificación de Hardware</h4>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="environment-card">
+                            <h6><i class="bi bi-laptop"></i> <strong>Ambiente Local</strong></h6>
+                            <ul class="small mb-0">
+                                <li><strong>CPU:</strong> 4 cores mínimo</li>
+                                <li><strong>RAM:</strong> 8 GB mínimo</li>
+                                <li><strong>Disco:</strong> 20 GB libres</li>
+                                <li><strong>OS:</strong> Windows 10/11, Linux, macOS</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="environment-card">
+                            <h6><i class="bi bi-server"></i> <strong>K8s Local</strong></h6>
+                            <ul class="small mb-0">
+                                <li><strong>CPU:</strong> 8 cores recomendado</li>
+                                <li><strong>RAM:</strong> 16 GB mínimo</li>
+                                <li><strong>Disco:</strong> 50 GB libres</li>
+                                <li><strong>K8s:</strong> v1.28+ (Minikube/Kind)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="environment-card">
+                            <h6><i class="bi bi-cloud"></i> <strong>Azure AKS</strong></h6>
+                            <ul class="small mb-0">
+                                <li><strong>Node Size:</strong> Standard_D4s_v3</li>
+                                <li><strong>Nodes:</strong> 3 nodos mínimo</li>
+                                <li><strong>Storage:</strong> Azure Disk Premium</li>
+                                <li><strong>DB:</strong> Azure MySQL Flexible</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">1.3 Requerimientos de Software</h4>
+                <table class="table table-bordered">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Componente</th>
+                            <th>Versión</th>
+                            <th>Requerido en</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Python</td>
+                            <td>3.10+</td>
+                            <td>Local</td>
+                        </tr>
+                        <tr>
+                            <td>MySQL</td>
+                            <td>8.0+</td>
+                            <td>Local, K8s Local</td>
+                        </tr>
+                        <tr>
+                            <td>Docker</td>
+                            <td>Latest</td>
+                            <td>Local, K8s Local</td>
+                        </tr>
+                        <tr>
+                            <td>Kubernetes</td>
+                            <td>1.28+</td>
+                            <td>K8s Local, Azure</td>
+                        </tr>
+                        <tr>
+                            <td>kubectl</td>
+                            <td>1.28+</td>
+                            <td>K8s Local, Azure</td>
+                        </tr>
+                        <tr>
+                            <td>ArgoCD</td>
+                            <td>2.8+</td>
+                            <td>K8s Local</td>
+                        </tr>
+                        <tr>
+                            <td>Azure CLI</td>
+                            <td>Latest</td>
+                            <td>Azure</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- 2. INSTALACIÓN Y CONFIGURACIÓN -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-gear"></i> 2. Instalación y Configuración
+                </h2>
+
+                <div class="accordion" id="installAccordion">
+                    <!-- AMBIENTE 1: LOCAL -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#install1">
+                                <i class="bi bi-laptop me-2"></i> 2.1 Instalación en Ambiente Local
+                            </button>
+                        </h2>
+                        <div id="install1" class="accordion-collapse collapse show" data-bs-parent="#installAccordion">
+                            <div class="accordion-body">
+                                <h6><strong>Paso 1:</strong> Clonar el repositorio</h6>
+                                <div class="code-block">
+                                    <pre>git clone https://github.com/emedayinc17/notas-hexagonal.git
+cd notas-hexagonal</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 2:</strong> Configurar base de datos</h6>
+                                <div class="code-block">
+                                    <pre># Crear base de datos
+mysql -u root -p < database/bootstrap.sql
+
+# Verificar creación
+mysql -u root -p -e "SHOW DATABASES LIKE 'sga_%';"</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 3:</strong> Configurar variables de entorno</h6>
+                                <div class="code-block">
+                                    <pre># Copiar archivos .env.example a .env en cada servicio
+cp services/iam-service/.env.example services/iam-service/.env
+cp services/academico-service/.env.example services/academico-service/.env
+cp services/personas-service/.env.example services/personas-service/.env
+cp services/notas-service/.env.example services/notas-service/.env
+
+# Editar cada .env con credenciales correctas
+# DB_HOST=localhost
+# DB_USER=app_iam (o app_academico, app_personas, app_notas)
+# DB_PASSWORD=<password del bootstrap.sql></pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 4:</strong> Iniciar servicios</h6>
+                                <div class="code-block">
+                                    <pre># Opción 1: Script automatizado
+.\start_all_services.ps1
+
+# Opción 2: Manual (cada servicio en terminal separada)
+cd services/iam-service && uvicorn app.main:app --reload --port 8001
+cd services/academico-service && uvicorn app.main:app --reload --port 8002
+cd services/personas-service && uvicorn app.main:app --reload --port 8003
+cd services/notas-service && uvicorn app.main:app --reload --port 8004
+
+# Frontend (con servidor HTTP simple)
+cd frontend && python -m http.server 8080</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 5:</strong> Verificar instalación</h6>
+                                <div class="code-block">
+                                    <pre># Verificar servicios
+curl http://localhost:8001/health
+curl http://localhost:8002/health
+curl http://localhost:8003/health
+curl http://localhost:8004/health
+
+# Acceder al frontend
+http://localhost:8080</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AMBIENTE 2: K8S LOCAL -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#install2">
+                                <i class="bi bi-server me-2"></i> 2.2 Instalación en Kubernetes Local (ArgoCD)
+                            </button>
+                        </h2>
+                        <div id="install2" class="accordion-collapse collapse" data-bs-parent="#installAccordion">
+                            <div class="accordion-body">
+                                <h6><strong>Paso 1:</strong> Iniciar cluster Kubernetes local</h6>
+                                <div class="code-block">
+                                    <pre># Con Minikube
+minikube start --cpus=4 --memory=8192
+
+# O con Kind
+kind create cluster --name sga-cluster</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 2:</strong> Instalar ArgoCD</h6>
+                                <div class="code-block">
+                                    <pre># Crear namespace
+kubectl create namespace argocd
+
+# Instalar ArgoCD
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Esperar a que esté listo
+kubectl wait --for=condition=available --timeout=600s deployment/argocd-server -n argocd
+
+# Obtener password inicial
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 3:</strong> Crear namespace y secrets</h6>
+                                <div class="code-block">
+                                    <pre># Crear namespace
+kubectl create namespace sga
+
+# Crear secrets para DB
+kubectl create secret generic mysql-secret -n sga \
+  --from-literal=root-password=rootpass \
+  --from-literal=app-password=apppass</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 4:</strong> Desplegar con ArgoCD</h6>
+                                <div class="code-block">
+                                    <pre># Aplicar Application de ArgoCD
+kubectl apply -f k8s/frontend/deployapp.yaml
+
+# Verificar sincronización
+kubectl get applications -n argocd
+
+# Ver pods
+kubectl get pods -n sga</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 5:</strong> Configurar Ingress</h6>
+                                <div class="code-block">
+                                    <pre># Agregar entrada en /etc/hosts (Linux/Mac) o C:\Windows\System32\drivers\etc\hosts (Windows)
+127.0.0.1 sga.emeday.inc
+
+# Acceder
+http://sga.emeday.inc</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AMBIENTE 3: AZURE -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#install3">
+                                <i class="bi bi-cloud me-2"></i> 2.3 Instalación en Azure Kubernetes Service
+                            </button>
+                        </h2>
+                        <div id="install3" class="accordion-collapse collapse" data-bs-parent="#installAccordion">
+                            <div class="accordion-body">
+                                <h6><strong>Paso 1:</strong> Crear cluster AKS</h6>
+                                <div class="code-block">
+                                    <pre># Login a Azure
+az login
+
+# Crear resource group
+az group create --name sga-rg --location eastus
+
+# Crear AKS cluster
+az aks create \
+  --resource-group sga-rg \
+  --name sga-cluster \
+  --node-count 3 \
+  --node-vm-size Standard_D4s_v3 \
+  --enable-managed-identity \
+  --generate-ssh-keys</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 2:</strong> Conectar a AKS</h6>
+                                <div class="code-block">
+                                    <pre># Obtener credenciales
+az aks get-credentials --resource-group sga-rg --name sga-cluster
+
+# Verificar conexión
+kubectl get nodes</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 3:</strong> Crear Azure MySQL Database</h6>
+                                <div class="code-block">
+                                    <pre># Crear servidor MySQL
+az mysql flexible-server create \
+  --resource-group sga-rg \
+  --name sga-mysql-server \
+  --admin-user sgaadmin \
+  --admin-password <SecurePassword> \
+  --sku-name Standard_D4ds_v4 \
+  --tier GeneralPurpose \
+  --version 8.0
+
+# Crear bases de datos
+az mysql flexible-server db create --resource-group sga-rg --server-name sga-mysql-server --database-name sga_iam
+az mysql flexible-server db create --resource-group sga-rg --server-name sga-mysql-server --database-name sga_academico
+az mysql flexible-server db create --resource-group sga-rg --server-name sga-mysql-server --database-name sga_personas
+az mysql flexible-server db create --resource-group sga-rg --server-name sga-mysql-server --database-name sga_notas</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 4:</strong> Desplegar aplicación</h6>
+                                <div class="code-block">
+                                    <pre># Crear namespace
+kubectl create namespace sga
+
+# Aplicar configuración con Kustomize
+kubectl apply -k k8s_internet/frontend/overlays/prod
+
+# Verificar deployment
+kubectl get pods -n sga
+kubectl get svc -n sga</pre>
+                                </div>
+
+                                <h6 class="mt-3"><strong>Paso 5:</strong> Acceder a la aplicación</h6>
+                                <div class="code-block">
+                                    <pre># Obtener IP pública
+kubectl get svc -n sga frontend-service
+
+# Acceder
+http://sga.172.189.58.78.nip.io</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. MANTENIMIENTO RUTINARIO -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-tools"></i> 3. Mantenimiento Rutinario
+                </h2>
+
+                <h4>3.1 Backups de Base de Datos</h4>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="bi bi-laptop"></i> Local</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="small"><strong>Frecuencia:</strong> Diario (2:00 AM)</p>
+                                <div class="code-block">
+                                    <pre class="small"># Script de backup
+mysqldump -u root -p \
+  --all-databases \
+  --single-transaction \
+  > backup_$(date +%Y%m%d).sql
+
+# Comprimir
+gzip backup_$(date +%Y%m%d).sql</pre>
+                                </div>
+                                <p class="small mb-0"><strong>Retención:</strong> 7 días</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="bi bi-server"></i> K8s Local</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="small"><strong>Frecuencia:</strong> Diario (3:00 AM)</p>
+                                <div class="code-block">
+                                    <pre class="small"># CronJob en K8s
+kubectl create cronjob mysql-backup \
+  --image=mysql:8.0 \
+  --schedule="0 3 * * *" \
+  -- /bin/sh -c "mysqldump..."</pre>
+                                </div>
+                                <p class="small mb-0"><strong>Retención:</strong> 14 días</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="bi bi-cloud"></i> Azure</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="small"><strong>Frecuencia:</strong> Automático</p>
+                                <div class="code-block">
+                                    <pre class="small"># Azure maneja backups
+# Configurar retención
+az mysql flexible-server backup \
+  --resource-group sga-rg \
+  --name sga-mysql-server \
+  --retention-days 30</pre>
+                                </div>
+                                <p class="small mb-0"><strong>Retención:</strong> 30 días</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">3.2 Rotación de Logs</h4>
+                <table class="table table-bordered">
+                    <thead class="table-warning">
+                        <tr>
+                            <th>Ambiente</th>
+                            <th>Ubicación</th>
+                            <th>Rotación</th>
+                            <th>Retención</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Local</td>
+                            <td><code>/var/log/sga/</code></td>
+                            <td>Diario</td>
+                            <td>7 días</td>
+                        </tr>
+                        <tr>
+                            <td>K8s Local</td>
+                            <td><code>kubectl logs</code></td>
+                            <td>Automático</td>
+                            <td>3 días</td>
+                        </tr>
+                        <tr>
+                            <td>Azure</td>
+                            <td>Azure Monitor</td>
+                            <td>Automático</td>
+                            <td>30 días</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 class="mt-4">3.3 Actualización de Dependencias</h4>
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-exclamation-triangle me-2"></i>Frecuencia: Mensual</h6>
+                    <div class="code-block">
+                        <pre># Actualizar dependencias Python
+pip list --outdated
+pip install --upgrade <package>
+
+# Actualizar imágenes Docker
+docker pull emeday17/frontend:latest
+docker pull emeday17/iam:latest
+
+# En K8s, actualizar deployment
+kubectl set image deployment/frontend frontend=emeday17/frontend:latest -n sga</pre>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">3.4 Parcheo de Seguridad</h4>
+                <div class="alert alert-danger">
+                    <h6><i class="bi bi-shield-exclamation me-2"></i>Según CVE detectados</h6>
+                    <ol class="mb-0">
+                        <li>Revisar CVE database semanalmente</li>
+                        <li>Aplicar parches críticos en 24h</li>
+                        <li>Aplicar parches altos en 7 días</li>
+                        <li>Probar en ambiente local antes de producción</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- 4. TROUBLESHOOTING -->
+            <section>
+                <h2 class="section-title">
+                    <i class="bi bi-bug"></i> 4. Troubleshooting
+                </h2>
+
+                <h4>4.1 Problemas Comunes - Ambiente Local</h4>
+
+                <div class="troubleshooting-item">
+                    <h6><strong>Problema:</strong> Servicio no inicia</h6>
+                    <p class="mb-1"><strong>Síntomas:</strong> Error al ejecutar <code>uvicorn app.main:app</code></p>
+                    <p class="mb-1"><strong>Causas posibles:</strong></p>
+                    <ul class="small">
+                        <li>Variables de entorno incorrectas</li>
+                        <li>Puerto ya en uso</li>
+                        <li>Dependencias faltantes</li>
+                    </ul>
+                    <p class="mb-1"><strong>Solución:</strong></p>
+                    <div class="code-block">
+                        <pre># 1. Verificar .env
+cat services/iam-service/.env
+
+# 2. Verificar puerto
+netstat -ano | findstr :8001
+
+# 3. Reinstalar dependencias
+pip install -r requirements.txt
+
+# 4. Ver logs detallados
+uvicorn app.main:app --reload --port 8001 --log-level debug</pre>
+                    </div>
+                </div>
+
+                <div class="troubleshooting-item">
+                    <h6><strong>Problema:</strong> Error de conexión a base de datos</h6>
+                    <p class="mb-1"><strong>Síntomas:</strong> <code>Can't connect to MySQL server</code></p>
+                    <p class="mb-1"><strong>Solución:</strong></p>
+                    <div class="code-block">
+                        <pre># 1. Verificar que MySQL esté corriendo
+mysql -u root -p -e "SELECT 1"
+
+# 2. Verificar credenciales en .env
+DB_HOST=localhost
+DB_USER=app_iam
+DB_PASSWORD=iam_pass_2025
+
+# 3. Verificar que el usuario exista
+mysql -u root -p -e "SELECT user, host FROM mysql.user WHERE user LIKE 'app_%';"
+
+# 4. Recrear usuario si es necesario
+mysql -u root -p < database/bootstrap.sql</pre>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">4.2 Problemas Comunes - Kubernetes Local</h4>
+
+                <div class="troubleshooting-item">
+                    <h6><strong>Problema:</strong> Pod en estado CrashLoopBackOff</h6>
+                    <p class="mb-1"><strong>Solución:</strong></p>
+                    <div class="code-block">
+                        <pre># 1. Ver logs del pod
+kubectl logs <pod-name> -n sga
+
+# 2. Describir el pod
+kubectl describe pod <pod-name> -n sga
+
+# 3. Verificar ConfigMap
+kubectl get configmap -n sga
+kubectl describe configmap frontend-config -n sga
+
+# 4. Verificar secrets
+kubectl get secrets -n sga
+
+# 5. Reiniciar deployment
+kubectl rollout restart deployment/frontend -n sga</pre>
+                    </div>
+                </div>
+
+                <div class="troubleshooting-item">
+                    <h6><strong>Problema:</strong> Ingress no responde</h6>
+                    <p class="mb-1"><strong>Solución:</strong></p>
+                    <div class="code-block">
+                        <pre># 1. Verificar Ingress
+kubectl get ingress -n sga
+
+# 2. Verificar que el servicio exista
+kubectl get svc -n sga
+
+# 3. Verificar /etc/hosts
+cat /etc/hosts | grep sga.emeday.inc
+
+# 4. Probar con port-forward
+kubectl port-forward svc/frontend-service 8080:80 -n sga
+# Luego acceder a http://localhost:8080</pre>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">4.3 Problemas Comunes - Azure</h4>
+
+                <div class="troubleshooting-item">
+                    <h6><strong>Problema:</strong> No se puede acceder a la aplicación</h6>
+                    <p class="mb-1"><strong>Solución:</strong></p>
+                    <div class="code-block">
+                        <pre># 1. Verificar IP pública
+kubectl get svc -n sga frontend-service
+
+# 2. Verificar firewall de Azure
+az network nsg rule list --resource-group sga-rg --nsg-name sga-nsg
+
+# 3. Verificar pods
+kubectl get pods -n sga
+
+# 4. Ver logs
+kubectl logs -l app=frontend -n sga --tail=100</pre>
+                    </div>
+                </div>
+
+                <div class="troubleshooting-item">
+                    <h6><strong>Problema:</strong> Error de conexión a Azure MySQL</h6>
+                    <p class="mb-1"><strong>Solución:</strong></p>
+                    <div class="code-block">
+                        <pre># 1. Verificar firewall de MySQL
+az mysql flexible-server firewall-rule list \
+  --resource-group sga-rg \
+  --name sga-mysql-server
+
+# 2. Agregar regla si es necesario
+az mysql flexible-server firewall-rule create \
+  --resource-group sga-rg \
+  --name sga-mysql-server \
+  --rule-name AllowAKS \
+  --start-ip-address 0.0.0.0 \
+  --end-ip-address 255.255.255.255
+
+# 3. Verificar connection string
+kubectl get secret mysql-secret -n sga -o yaml</pre>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">4.4 Procedimientos de Recuperación</h4>
+
+                <div class="accordion" id="recoveryAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#recovery1">
+                                Recuperación de Base de Datos
+                            </button>
+                        </h2>
+                        <div id="recovery1" class="accordion-collapse collapse" data-bs-parent="#recoveryAccordion">
+                            <div class="accordion-body">
+                                <h6>Ambiente Local:</h6>
+                                <div class="code-block">
+                                    <pre># Restaurar desde backup
+gunzip backup_20251206.sql.gz
+mysql -u root -p < backup_20251206.sql</pre>
+                                </div>
+
+                                <h6 class="mt-3">Azure:</h6>
+                                <div class="code-block">
+                                    <pre># Restaurar desde backup automático
+az mysql flexible-server restore \
+  --resource-group sga-rg \
+  --name sga-mysql-server-restored \
+  --source-server sga-mysql-server \
+  --restore-time "2025-12-06T00:00:00Z"</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#recovery2">
+                                Recuperación ante Desastres
+                            </button>
+                        </h2>
+                        <div id="recovery2" class="accordion-collapse collapse" data-bs-parent="#recoveryAccordion">
+                            <div class="accordion-body">
+                                <h6>Plan de Recuperación:</h6>
+                                <ol>
+                                    <li><strong>RTO (Recovery Time Objective):</strong> 4 horas</li>
+                                    <li><strong>RPO (Recovery Point Objective):</strong> 24 horas</li>
+                                </ol>
+
+                                <h6 class="mt-3">Pasos:</h6>
+                                <ol>
+                                    <li>Activar plan de contingencia</li>
+                                    <li>Restaurar base de datos desde último backup</li>
+                                    <li>Redesplegar aplicación desde Git</li>
+                                    <li>Verificar integridad de datos</li>
+                                    <li>Notificar a stakeholders</li>
+                                </ol>
+
+                                <div class="code-block">
+                                    <pre># Script de recuperación rápida
+git clone https://github.com/emedayinc17/notas-hexagonal.git
+cd notas-hexagonal
+mysql -u root -p < backup_latest.sql
+kubectl apply -k k8s_internet/frontend/overlays/prod</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <div class="text-center mt-5 pt-4 border-top">
+                <p class="text-muted">
+                    <strong>Documentación de Operaciones</strong> - Sistema de Gestión de Notas
+                </p>
+                <p class="text-muted small">
+                    Versión: 1.0.0 | Actualizado: Diciembre 6, 2025
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
